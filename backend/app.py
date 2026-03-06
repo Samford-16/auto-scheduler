@@ -1,9 +1,8 @@
 from flask import Flask, request, redirect
 import sqlite3
+import os
 
 app = Flask(__name__)
-
-import os
 
 def get_db():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
