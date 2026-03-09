@@ -20,4 +20,5 @@ fetch("http://34.28.196.192:5000/workers")
 
     });
 
-});
+})
+.catch(error => console.error("Error:", error));
