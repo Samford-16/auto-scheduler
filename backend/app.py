@@ -14,21 +14,21 @@ def get_db():
 def add_worker():
 
     name = request.form['worker_name']
-    max_hours = request.form['max_hours']
+    hours = request.form['max_hours']
     overtime = request.form['overtime']
 
     conn = get_db()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    cur.execute(
+    cursor.execute(
         "INSERT INTO workers (name, max_hours, overtime_allowed) VALUES (?, ?, ?)",
-        (name, max_hours, overtime)
+        (name, hours, overtime)
     )
 
     conn.commit()
     conn.close()
 
-return redirect("http://34.28.196.192/")
+    return redirect("http://34.28.196.192/dashboard.html")
 
 @app.route("/workers")
 def workers():
