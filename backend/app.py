@@ -28,5 +28,20 @@ def add_worker():
 
     return redirect("/dashboard.html")
 
+@app.route("/workers")
+def workers():
+
+    import sqlite3
+
+    conn = sqlite3.connect("../workers.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM workers")
+    data = cursor.fetchall()
+
+    conn.close()
+
+    return {"workers": data}
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
