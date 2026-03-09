@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect
-from database import get_db
+import sqlite3
 import os
 
 app = Flask(__name__)
