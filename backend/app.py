@@ -28,8 +28,7 @@ def add_worker():
     conn.commit()
     conn.close()
 
-    return redirect("http://34.28.196.192/dashboard.html")
-
+return redirect("http://34.28.196.192/")
 
 @app.route("/workers")
 def workers():
