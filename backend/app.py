@@ -9,8 +9,10 @@ def get_db():
     db_path = os.path.join(BASE_DIR, "workers.db")
     return sqlite3.connect(db_path)
 
+
 @app.route('/add-worker', methods=['POST'])
 def add_worker():
+
     name = request.form['worker_name']
     max_hours = request.form['max_hours']
     overtime = request.form['overtime']
@@ -28,12 +30,11 @@ def add_worker():
 
     return redirect("/dashboard.html")
 
+
 @app.route("/workers")
 def workers():
 
-    import sqlite3
-
-    conn = sqlite3.connect("../workers.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM workers")
@@ -42,6 +43,7 @@ def workers():
     conn.close()
 
     return {"workers": data}
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
