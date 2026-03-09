@@ -1,5 +1,6 @@
 console.log("workers.js loaded");
-fetch("/workers")
+
+fetch("http://34.28.196.192:5000/workers")
 .then(response => response.json())
 .then(data => {
 
