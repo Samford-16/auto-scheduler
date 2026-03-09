@@ -22,5 +22,14 @@ def init_db():
     )
     """)
 
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS availability (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        worker_id INTEGER,
+        day TEXT,
+        FOREIGN KEY(worker_id) REFERENCES workers(id)
+    )
+    """)
+
     conn.commit()
     conn.close()

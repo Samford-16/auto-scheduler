@@ -1,45 +1,38 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<title>Add Worker</title>
-
-</head>
-
-<body>
-
 <h2>Add Worker</h2>
 
-<form action="http://34.28.196.192:5000/add-worker" method="POST">
-
 Name:
-
-<input name="name">
+<input id="name">
 
 <br><br>
 
 Max Hours:
-
-<input name="max_hours">
+<input id="hours">
 
 <br><br>
 
 Overtime Allowed:
 
-<select name="overtime">
-
+<select id="overtime">
 <option value="yes">Yes</option>
 <option value="no">No</option>
-
 </select>
 
 <br><br>
 
-<button type="submit">Add Worker</button>
+Availability:
 
-</form>
+<br>
 
-</body>
+<label><input type="checkbox" value="Monday"> Monday</label>
+<label><input type="checkbox" value="Tuesday"> Tuesday</label>
+<label><input type="checkbox" value="Wednesday"> Wednesday</label>
+<label><input type="checkbox" value="Thursday"> Thursday</label>
+<label><input type="checkbox" value="Friday"> Friday</label>
+<label><input type="checkbox" value="Saturday"> Saturday</label>
+<label><input type="checkbox" value="Sunday"> Sunday</label>
 
-</html>
+<br><br>
+
+<button onclick="addWorker()">Add Worker</button>
+
+<script src="js/workers.js"></script>

@@ -1,24 +1,25 @@
-console.log("workers.js loaded");
-
 function loadWorkers(){
 
-fetch("http://localhost:5000/workers")
-.then(response => response.json())
-.then(data => {
+fetch("http://34.28.196.192:5000/workers")
 
-const table = document.getElementById("workers-table")
+.then(r=>r.json())
 
-table.innerHTML = ""
+.then(data=>{
 
-data.workers.forEach(worker => {
+const table=document.getElementById("workers-table")
 
-const row = document.createElement("tr")
+table.innerHTML=""
 
-row.innerHTML = `
-<td>${worker[1]}</td>
-<td>${worker[2]}</td>
-<td>${worker[3]}</td>
-<td><button onclick="deleteWorker(${worker[0]})">Delete</button></td>
+data.workers.forEach(w=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${w.name}</td>
+<td>${w.max_hours}</td>
+<td>${w.overtime}</td>
+<td>${w.availability.join(", ")}</td>
+<td><button onclick="deleteWorker(${w.id})">Delete</button></td>
 `
 
 table.appendChild(row)
@@ -29,4 +30,50 @@ table.appendChild(row)
 
 }
 
+
+function addWorker(){
+
+const name=document.getElementById("name").value
+const hours=document.getElementById("hours").value
+const overtime=document.getElementById("overtime").value
+
+const days=[]
+
+document.querySelectorAll("input[type=checkbox]:checked").forEach(cb=>{
+days.push(cb.value)
+})
+
+fetch("http://34.28.196.192:5000/add-worker",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+name:name,
+max_hours:hours,
+overtime:overtime,
+availability:days
+})
+
+})
+.then(()=>window.location.href="dashboard.html")
+
+}
+
+
+function deleteWorker(id){
+
+fetch(`http://34.28.196.192:5000/delete-worker/${id}`,{
+method:"DELETE"
+})
+.then(()=>loadWorkers())
+
+}
+
+
+if(document.getElementById("workers-table")){
 loadWorkers()
+}
