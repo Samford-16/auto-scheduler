@@ -1,24 +1,52 @@
 console.log("workers.js loaded");
 
+function loadWorkers() {
+
 fetch("http://34.28.196.192:5000/workers")
+
 .then(response => response.json())
+
 .then(data => {
 
-    const table = document.getElementById("workers-table");
+const table = document.getElementById("workers-table")
 
-    data.workers.forEach(worker => {
+table.innerHTML = ""
 
-        const row = document.createElement("tr");
+data.workers.forEach(worker => {
 
-        row.innerHTML = `
-            <td>${worker[1]}</td>
-            <td>${worker[2]}</td>
-            <td>${worker[3]}</td>
-        `;
+const row = document.createElement("tr")
 
-        table.appendChild(row);
+row.innerHTML = `
+<td>${worker[1]}</td>
+<td>${worker[2]}</td>
+<td>${worker[3]}</td>
+<td>
+<button onclick="deleteWorker(${worker[0]})">Delete</button>
+</td>
+`
 
-    });
+table.appendChild(row)
 
 })
-.catch(error => console.error("Error:", error));
+
+})
+
+}
+
+function deleteWorker(id){
+
+fetch(`http://34.28.196.192:5000/delete-worker/${id}`,{
+
+method:"DELETE"
+
+})
+
+.then(()=>{
+
+loadWorkers()
+
+})
+
+}
+
+loadWorkers()

@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Add Worker</title>
+
+<title>Add Worker</title>
+
 </head>
 
 <body>
@@ -10,41 +13,33 @@
 
 <form action="http://34.28.196.192:5000/add-worker" method="POST">
 
-<label>Worker Name:</label>
-<br>
-<input type="text" name="worker_name" required>
+Name:
+
+<input name="name">
+
 <br><br>
 
-<label>Maximum Weekly Hours:</label>
-<br>
-<input type="number" name="max_hours">
+Max Hours:
+
+<input name="max_hours">
+
 <br><br>
 
-<label>Overtime Allowed:</label>
-<br>
+Overtime Allowed:
+
 <select name="overtime">
+
 <option value="yes">Yes</option>
 <option value="no">No</option>
+
 </select>
 
 <br><br>
-
-<label>Available Days:</label>
-<br>
-
-<input type="checkbox" name="days" value="Monday"> Monday<br>
-<input type="checkbox" name="days" value="Tuesday"> Tuesday<br>
-<input type="checkbox" name="days" value="Wednesday"> Wednesday<br>
-<input type="checkbox" name="days" value="Thursday"> Thursday<br>
-<input type="checkbox" name="days" value="Friday"> Friday<br>
-<input type="checkbox" name="days" value="Saturday"> Saturday<br>
-<input type="checkbox" name="days" value="Sunday"> Sunday<br>
-
-<br>
 
 <button type="submit">Add Worker</button>
 
 </form>
 
 </body>
+
 </html>
