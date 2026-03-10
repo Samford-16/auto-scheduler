@@ -123,6 +123,37 @@
     </div>
   </div>
 
+  <!-- Edit Shift Modal -->
+  <div class="modal-overlay" id="edit-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-title">Edit Shift</div>
+      <div style="display:flex;flex-direction:column;gap:0.75rem">
+        <div>
+          <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Worker</label>
+          <select id="edit-worker-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none"></select>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <div style="flex:1">
+            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Start</label>
+            <input type="time" id="edit-start" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">End</label>
+            <input type="time" id="edit-end" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Role</label>
+          <select id="edit-role-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none"></select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('edit-modal').style.display='none'">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditShift()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Swap Modal -->
   <div class="modal-overlay" id="swap-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal" style="max-width:360px">
@@ -261,9 +292,10 @@
                 <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${slot.workers.length} worker${slot.workers.length>1?'s':''}</span>
               </div>`;
             slot.workers.forEach(s => {
-              html += `<div style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border)">
+              html += `<div id="shift-row-${s.id}" style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border)">
                 <span style="font-weight:500;color:var(--text);flex:1">${s.worker}</span>
                 <div class="no-print" style="display:flex;gap:0.4rem">
+                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openEditModal(${s.id},'${s.worker}','${s.day}','${s.start_time}','${s.end_time}',${s.role_id||0},'${s.role||''}')">✏ Edit</button>
                   <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openSwapModal(${s.id},'${s.worker}','${s.day}')">⇄ Swap</button>
                   <button class="btn btn-danger-soft" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="deleteShift(${s.id})">Remove</button>
                 </div>
@@ -300,6 +332,51 @@
       a.download = `${company ? company.name.replace(/\s+/g,"-") : "schedule"}-schedule.csv`;
       a.click();
       URL.revokeObjectURL(url);
+    }
+
+
+    // ── EDIT SHIFT ─────────────────────────────────────
+    let editShiftId = null;
+
+    function openEditModal(shiftId, workerName, day, start, end, roleId, roleName) {
+      editShiftId = shiftId;
+      document.getElementById("edit-start").value = start;
+      document.getElementById("edit-end").value = end;
+
+      // Populate worker dropdown
+      fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+        const workers = data.workers || [];
+        const sel = document.getElementById("edit-worker-select");
+        sel.innerHTML = workers.map(w =>
+          `<option value="${w.id}" ${w.name === workerName ? "selected" : ""}>${w.name}</option>`
+        ).join("");
+      });
+
+      // Populate role dropdown
+      const roleSel = document.getElementById("edit-role-select");
+      roleSel.innerHTML = roles.map(r =>
+        `<option value="${r.id}" ${r.id == roleId ? "selected" : ""}>${r.name}</option>`
+      ).join("");
+
+      document.getElementById("edit-modal").style.display = "flex";
+    }
+
+    function saveEditShift() {
+      const worker_id = document.getElementById("edit-worker-select").value;
+      const start_time = document.getElementById("edit-start").value;
+      const end_time = document.getElementById("edit-end").value;
+      const role_id = document.getElementById("edit-role-select").value;
+
+      fetch(`${API}/schedule/${editShiftId}`, {
+        method: "PUT", headers: authHeaders(),
+        body: JSON.stringify({ worker_id, start_time, end_time, role_id })
+      }).then(r => r.json()).then(d => {
+        if (d.status === "success") {
+          showToast("Shift updated");
+          document.getElementById("edit-modal").style.display = "none";
+          loadExistingSchedule();
+        } else showToast("Failed to update shift", "error");
+      });
     }
 
     // ── TEMPLATES ──────────────────────────────────────
