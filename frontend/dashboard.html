@@ -40,7 +40,24 @@
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Total Workers</div><div class="stat-value accent" id="stat-workers">—</div></div>
         <div class="stat-card"><div class="stat-label">Overtime Eligible</div><div class="stat-value" id="stat-ot">—</div></div>
-        <div class="stat-card"><div class="stat-label">Max Weekly Hours</div><div class="stat-value" id="stat-hours">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Max Hrs/Wk</div><div class="stat-value" id="stat-hours">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Hrs / Worker</div><div class="stat-value" id="stat-avg">—</div></div>
+        <div class="stat-card"><div class="stat-label">Roles Covered</div><div class="stat-value" id="stat-roles">—</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="document.getElementById('conflicts-section').scrollIntoView({behavior:'smooth'})">
+          <div class="stat-label">⚠️ Conflicts</div>
+          <div class="stat-value" id="stat-conflicts">—</div>
+        </div>
+      </div>
+
+      <!-- Conflict Warnings -->
+      <div id="conflicts-section" style="display:none; margin-bottom:1.25rem">
+        <div class="card" style="border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.04)">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem">
+            <div class="card-title" style="color:#f87171">⚠️ Scheduling Conflicts</div>
+            <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.3rem 0.6rem" onclick="document.getElementById('conflicts-section').style.display='none'">Dismiss</button>
+          </div>
+          <div id="conflicts-list"></div>
+        </div>
       </div>
 
       <div class="card-overflow">
@@ -56,6 +73,7 @@
     </main>
   </div>
   <div class="toast" id="toast"></div>
+
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
@@ -67,12 +85,59 @@
       setTimeout(() => t.className = "toast", 3000);
     }
 
+    function checkConflicts(workers, schedule) {
+      const conflicts = [];
+      // Tally scheduled hours per worker
+      const hoursMap = {};
+      schedule.forEach(s => {
+        if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
+        const [sh, sm] = s.start_time.split(":").map(Number);
+        const [eh, em] = s.end_time.split(":").map(Number);
+        hoursMap[s.worker] += (eh + em / 60) - (sh + sm / 60);
+      });
+      workers.forEach(w => {
+        const scheduled = hoursMap[w.name] || 0;
+        if (scheduled > w.max_hours && w.overtime !== "yes")
+          conflicts.push(`<strong>${w.name}</strong> is scheduled for ${scheduled.toFixed(1)} hrs but their max is ${w.max_hours} hrs and they are not overtime eligible.`);
+        schedule.filter(s => s.worker === w.name).forEach(s => {
+          if (!w.availability.includes(s.day))
+            conflicts.push(`<strong>${w.name}</strong> is scheduled on <strong>${s.day}</strong> but is not available that day.`);
+        });
+      });
+      return conflicts;
+    }
+
     function loadWorkers() {
-      fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()).then(data => {
-        const workers = data.workers || [];
-        document.getElementById("stat-workers").textContent = workers.length;
-        document.getElementById("stat-ot").textContent = workers.filter(w => w.overtime === "yes").length;
-        document.getElementById("stat-hours").textContent = workers.reduce((s, w) => s + w.max_hours, 0);
+      Promise.all([
+        fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()),
+        fetch(`${API}/schedule`, { headers: authHeaders() }).then(r => r.json())
+      ]).then(([wd, sd]) => {
+        const workers = wd.workers || [];
+        const schedule = sd.schedule || [];
+
+        const total = workers.length;
+        const ot = workers.filter(w => w.overtime === "yes").length;
+        const totalHrs = workers.reduce((s, w) => s + w.max_hours, 0);
+        const avg = total ? Math.round(totalHrs / total) : 0;
+        const roles = new Set(workers.flatMap(w => w.roles.map(r => r.name))).size;
+
+        document.getElementById("stat-workers").textContent = total;
+        document.getElementById("stat-ot").textContent = ot;
+        document.getElementById("stat-hours").textContent = totalHrs;
+        document.getElementById("stat-avg").textContent = avg ? `${avg}h` : "—";
+        document.getElementById("stat-roles").textContent = roles;
+
+        const conflicts = checkConflicts(workers, schedule);
+        const conflEl = document.getElementById("stat-conflicts");
+        conflEl.textContent = conflicts.length;
+        conflEl.style.color = conflicts.length > 0 ? "#f87171" : "var(--text)";
+        if (conflicts.length > 0) {
+          document.getElementById("conflicts-section").style.display = "block";
+          document.getElementById("conflicts-list").innerHTML = conflicts
+            .map(c => `<div style="font-size:0.85rem;padding:0.5rem 0;border-bottom:1px solid var(--border);color:var(--text-secondary)">${c}</div>`)
+            .join("");
+        }
+
         if (!workers.length) return;
         const tbody = workers.map(w => `
           <tr>
@@ -81,7 +146,10 @@
             <td><span class="badge ${w.overtime === 'yes' ? 'badge-yes' : 'badge-no'}">${w.overtime === 'yes' ? 'Yes' : 'No'}</span></td>
             <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td><button class="btn btn-danger-soft" onclick="deleteWorker(${w.id}, '${w.name}')">Remove</button></td>
+            <td>
+              <a href="edit-worker.html?id=${w.id}" class="btn btn-ghost" style="font-size:0.8rem;padding:0.3rem 0.7rem;margin-right:0.25rem">Edit</a>
+              <button class="btn btn-danger-soft" onclick="deleteWorker(${w.id}, '${w.name}')">Remove</button>
+            </td>
           </tr>`).join("");
         document.getElementById("workers-container").innerHTML = `
           <table><thead><tr><th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th></th></tr></thead>

@@ -6,6 +6,22 @@
   <title>Schedule — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    @media print {
+      .sidebar, .page-header, .card:first-child, .no-print { display: none !important; }
+      .main-content { margin-left: 0 !important; padding: 0 !important; }
+      body { background: white !important; color: black !important; }
+      .card { border: 1px solid #ddd !important; background: white !important; box-shadow: none !important; }
+      table { font-size: 12px; }
+      th, td { border-bottom: 1px solid #eee !important; color: black !important; }
+      .day-header td { background: #f5f5f5 !important; color: #333 !important; }
+      .role-chip { background: #eee !important; color: #333 !important; border-radius: 3px; padding: 1px 5px; }
+      .print-header { display: block !important; }
+    }
+    .print-header { display: none; margin-bottom: 1rem; }
+    .print-header h2 { font-size: 1.2rem; }
+    .print-header p { font-size: 0.85rem; color: #666; }
+  </style>
 </head>
 <body>
   <div class="app-layout">
@@ -36,7 +52,8 @@
         </div>
       </div>
 
-      <div class="card">
+      <!-- Shift builder -->
+      <div class="card no-print">
         <div class="card-title-lg">Shift Requirements</div>
         <div class="label-row"><span>Day</span><span>Start</span><span>End</span><span>Role</span><span>Needed</span><span></span></div>
         <div id="shifts-builder"></div>
@@ -46,8 +63,30 @@
         </div>
       </div>
 
+      <!-- Schedule output -->
       <div class="card" id="schedule-card" style="display:none">
-        <div class="card-title-lg">Generated Schedule</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem">
+          <div class="card-title-lg" style="margin-bottom:0">Generated Schedule</div>
+          <div style="display:flex; gap:0.5rem" class="no-print">
+            <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:0.82rem">⬇ Export CSV</button>
+            <button class="btn btn-ghost" onclick="exportPDF()" style="font-size:0.82rem">🖨 Print / PDF</button>
+          </div>
+        </div>
+
+        <!-- Print header (only visible when printing) -->
+        <div class="print-header">
+          <h2 id="print-company-name">Weekly Schedule</h2>
+          <p id="print-date"></p>
+        </div>
+
+        <!-- Schedule stats -->
+        <div id="schedule-stats" style="display:flex; gap:1.5rem; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border)" class="no-print">
+          <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Shifts Filled</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-filled">—</div></div>
+          <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Workers Scheduled</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-workers">—</div></div>
+          <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Days Covered</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-days">—</div></div>
+          <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total Hours</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-hours">—</div></div>
+        </div>
+
         <div id="schedule-output"></div>
       </div>
     </main>
@@ -59,6 +98,7 @@
     initSidebar("schedule");
 
     let roles = [];
+    let currentSchedule = [];
     const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
     fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
@@ -98,12 +138,28 @@
 
     function loadExistingSchedule() {
       fetch(`${API}/schedule`, { headers: authHeaders() }).then(r => r.json()).then(data => {
-        const schedule = data.schedule || [];
+        currentSchedule = data.schedule || [];
         const card = document.getElementById("schedule-card");
-        if (!schedule.length) { card.style.display = "none"; return; }
+        if (!currentSchedule.length) { card.style.display = "none"; return; }
         card.style.display = "block";
+
+        // Schedule stats
+        const uniqueWorkers = new Set(currentSchedule.map(s => s.worker)).size;
+        const uniqueDays = new Set(currentSchedule.map(s => s.day)).size;
+        let totalHours = 0;
+        currentSchedule.forEach(s => {
+          const [sh, sm] = s.start_time.split(":").map(Number);
+          const [eh, em] = s.end_time.split(":").map(Number);
+          totalHours += (eh + em/60) - (sh + sm/60);
+        });
+        document.getElementById("sched-stat-filled").textContent = currentSchedule.length;
+        document.getElementById("sched-stat-workers").textContent = uniqueWorkers;
+        document.getElementById("sched-stat-days").textContent = uniqueDays;
+        document.getElementById("sched-stat-hours").textContent = `${totalHours.toFixed(1)}h`;
+
+        // Table
         const byDay = {};
-        schedule.forEach(s => { if (!byDay[s.day]) byDay[s.day] = []; byDay[s.day].push(s); });
+        currentSchedule.forEach(s => { if (!byDay[s.day]) byDay[s.day] = []; byDay[s.day].push(s); });
         let html = `<table><thead><tr><th>Worker</th><th>Start</th><th>End</th><th>Role</th></tr></thead><tbody>`;
         for (const day of DAYS) {
           if (!byDay[day]) continue;
@@ -115,6 +171,31 @@
         html += `</tbody></table>`;
         document.getElementById("schedule-output").innerHTML = html;
       });
+    }
+
+    function exportPDF() {
+      const company = getCompany();
+      document.getElementById("print-company-name").textContent = `${company ? company.name + " — " : ""}Weekly Schedule`;
+      document.getElementById("print-date").textContent = `Generated ${new Date().toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}`;
+      window.print();
+    }
+
+    function exportCSV() {
+      const rows = [["Day","Worker","Start","End","Role"]];
+      for (const day of DAYS) {
+        currentSchedule.filter(s => s.day === day).forEach(s => {
+          rows.push([s.day, s.worker, s.start_time, s.end_time, s.role || ""]);
+        });
+      }
+      const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const company = getCompany();
+      a.href = url;
+      a.download = `${company ? company.name.replace(/\s+/g,"-") : "schedule"}-schedule.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>

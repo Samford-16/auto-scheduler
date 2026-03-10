@@ -251,6 +251,55 @@ def delete_worker(worker_id):
     conn.close()
     return jsonify({"status": "deleted"})
 
+@app.route('/edit-worker/<int:worker_id>', methods=['PUT'])
+def edit_worker(worker_id):
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    conn = get_db()
+    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    if not company:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+
+    # Verify ownership
+    worker = conn.execute('SELECT * FROM workers WHERE id = ? AND company_id = ?', (worker_id, company['id'])).fetchone()
+    if not worker:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Worker not found'}), 404
+
+    data = request.json
+    name       = data.get('name', '').strip()
+    max_hours  = data.get('max_hours', 40)
+    overtime   = data.get('overtime', 'no')
+    availability = data.get('availability', [])
+    role_ids   = data.get('roles', [])
+
+    if not name:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Name is required'}), 400
+
+    # Update worker basic info
+    conn.execute(
+        'UPDATE workers SET name = ?, max_hours = ?, overtime = ? WHERE id = ?',
+        (name, max_hours, overtime, worker_id)
+    )
+
+    # Replace availability
+    conn.execute('DELETE FROM availability WHERE worker_id = ?', (worker_id,))
+    for day in availability:
+        conn.execute('INSERT INTO availability (worker_id, day) VALUES (?, ?)', (worker_id, day))
+
+    # Replace roles
+    conn.execute('DELETE FROM worker_roles WHERE worker_id = ?', (worker_id,))
+    for role_id in role_ids:
+        # Verify role belongs to this company
+        role = conn.execute('SELECT * FROM roles WHERE id = ? AND company_id = ?', (role_id, company['id'])).fetchone()
+        if role:
+            conn.execute('INSERT INTO worker_roles (worker_id, role_id) VALUES (?, ?)', (worker_id, role_id))
+
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Worker updated'})
+
 # ──────────────────────────────────────────────
 # SCHEDULE
 # ──────────────────────────────────────────────
