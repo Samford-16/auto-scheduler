@@ -186,8 +186,8 @@
         <div class="cal-nav-right">
           <span class="range-badge">3 mo back · 6 mo forward</span>
           <div class="view-toggle">
-            <button class="view-btn active" id="vbtn-day"   onclick="setView('day')">Day</button>
-            <button class="view-btn"        id="vbtn-week"  onclick="setView('week')">Week</button>
+            <button class="view-btn"        id="vbtn-day"   onclick="setView('day')">Day</button>
+            <button class="view-btn active" id="vbtn-week"  onclick="setView('week')">Week</button>
             <button class="view-btn"        id="vbtn-month" onclick="setView('month')">Month</button>
           </div>
         </div>
@@ -246,6 +246,7 @@
     }
 
     function setView(v) {
+      if (currentView === v) return;
       currentView = v;
       ["day","week","month"].forEach(x => {
         document.getElementById(`vbtn-${x}`).classList.toggle("active", x === v);
