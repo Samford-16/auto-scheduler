@@ -310,6 +310,12 @@ def generate_schedule():
                 (archive_id, r["worker_id"], r["day"], r["start_time"], r["end_time"], r["role_id"])
             )
 
+    # Save the shift requirements so Refresh can replay them
+    import json
+    conn.execute("DELETE FROM last_shift_requirements WHERE company_id=?", (company["id"],))
+    conn.execute("INSERT INTO last_shift_requirements (company_id, shifts_json) VALUES (?,?)",
+        (company["id"], json.dumps(shifts)))
+
     conn.execute("DELETE FROM schedule WHERE company_id=?", (company["id"],))
     workers = conn.execute("SELECT * FROM workers WHERE company_id=?", (company["id"],)).fetchall()
     hours_used = {w["id"]: 0 for w in workers}
@@ -565,6 +571,105 @@ def delete_template(template_id):
     conn.close()
     log_action(company["id"], "DELETE_TEMPLATE", f"Deleted template ID: {template_id}")
     return jsonify({"status": "success"})
+
+# ──────────────────────────────────────────────
+# REFRESH SCHEDULE
+# ──────────────────────────────────────────────
+
+@app.route("/refresh-schedule", methods=["POST"])
+def refresh_schedule():
+    import json
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
+    conn = get_db()
+    row = conn.execute("SELECT shifts_json FROM last_shift_requirements WHERE company_id=?", (company["id"],)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"status": "error", "message": "No previous schedule found"}), 404
+    # Replay using the saved shifts
+    from flask import request as freq
+    import json as j
+    saved = j.loads(row["shifts_json"])
+    # Inject into request and call generate
+    with app.test_request_context(json={"shifts": saved}, headers={"Authorization": request.headers.get("Authorization","")}):
+        pass
+    # Call generate directly with saved data
+    data_backup = request.json if request.is_json else {}
+    # Use internal call approach
+    return generate_schedule_with(company, saved)
+
+def generate_schedule_with(company, shifts):
+    import json
+    conn = get_db()
+    label = datetime.utcnow().strftime("Week of %b %d, %Y")
+
+    existing = conn.execute("SELECT COUNT(*) as cnt FROM schedule WHERE company_id=?", (company["id"],)).fetchone()
+    if existing["cnt"] > 0:
+        archive_id = conn.execute(
+            "INSERT INTO schedule_history (company_id, label, created_at) VALUES (?,?,?)",
+            (company["id"], label, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+        ).lastrowid
+        rows = conn.execute("SELECT * FROM schedule WHERE company_id=?", (company["id"],)).fetchall()
+        for r in rows:
+            conn.execute(
+                "INSERT INTO schedule_history_shifts (history_id, worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?,?)",
+                (archive_id, r["worker_id"], r["day"], r["start_time"], r["end_time"], r["role_id"])
+            )
+
+    conn.execute("DELETE FROM schedule WHERE company_id=?", (company["id"],))
+    workers = conn.execute("SELECT * FROM workers WHERE company_id=?", (company["id"],)).fetchall()
+    hours_used = {w["id"]: 0 for w in workers}
+    assigned_today = {w["id"]: set() for w in workers}
+    assigned = []
+    unassigned = []
+    fmt = "%H:%M"
+
+    for shift in shifts:
+        day = shift["day"]
+        start = shift["start_time"]
+        end = shift["end_time"]
+        role_id = shift["role_id"]
+        needed = int(shift["workers_needed"])
+        try:
+            shift_hours = (datetime.strptime(end, fmt) - datetime.strptime(start, fmt)).seconds / 3600
+        except:
+            shift_hours = 8
+        eligible = conn.execute("""
+            SELECT w.* FROM workers w
+            JOIN availability a ON w.id = a.worker_id
+            JOIN worker_roles wr ON w.id = wr.worker_id
+            WHERE a.day=? AND wr.role_id=? AND w.company_id=?
+        """, (day, role_id, company["id"])).fetchall()
+        count = 0
+        for worker in eligible:
+            if count >= needed:
+                break
+            wid = worker["id"]
+            if day in assigned_today[wid]:
+                continue
+            projected = hours_used[wid] + shift_hours
+            if projected > worker["max_hours"] and worker["overtime"] != "yes":
+                continue
+            conn.execute(
+                "INSERT INTO schedule (company_id, worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?,?)",
+                (company["id"], wid, day, start, end, role_id)
+            )
+            hours_used[wid] = projected
+            assigned_today[wid].add(day)
+            assigned.append({"worker": worker["name"], "day": day})
+            count += 1
+        for _ in range(needed - count):
+            conn.execute(
+                "INSERT INTO schedule (company_id, worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?,?)",
+                (company["id"], None, day, start, end, role_id)
+            )
+            unassigned.append({"day": day, "start": start, "end": end, "role_id": role_id, "needed": needed, "filled": count})
+
+    conn.commit()
+    conn.close()
+    log_action(company["id"], "GENERATE_SCHEDULE", f"Refreshed: {len(assigned)} assigned, {len(unassigned)} unfilled")
+    return jsonify({"status": "success", "assigned": assigned, "unassigned": unassigned})
 
 # ──────────────────────────────────────────────
 # AUDIT LOG

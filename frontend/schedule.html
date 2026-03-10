@@ -76,6 +76,7 @@
           <button class="btn btn-ghost" onclick="addShiftRow()">+ Add Shift</button>
           <button class="btn btn-ghost" onclick="openTemplateModal()">📋 Templates</button>
           <button class="btn btn-primary" onclick="generateSchedule()">Generate Schedule</button>
+          <button class="btn btn-ghost" onclick="refreshSchedule()" title="Rerun last schedule with current workers">🔄 Refresh</button>
         </div>
       </div>
 
@@ -393,6 +394,22 @@
     }
 
     // ── TEMPLATES ──────────────────────────────────────
+    function refreshSchedule() {
+      if (!confirm("Rerun the last schedule with the current worker pool? This will replace the current schedule.")) return;
+      fetch(`${API}/refresh-schedule`, { method: "POST", headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          if (data.status === "error") { showToast(data.message || "No previous schedule to refresh", "error"); return; }
+          const unfilled = data.unassigned || [];
+          if (unfilled.length > 0) {
+            const total = unfilled.reduce((sum, u) => sum + (u.needed - u.filled), 0);
+            showToast(`Refreshed — ${total} slot(s) still unfilled`, "error");
+          } else {
+            showToast("Schedule refreshed! All slots filled ✓");
+          }
+          loadExistingSchedule();
+        });
+    }
+
     function openTemplateModal() {
       loadTemplates();
       document.getElementById("template-modal").style.display = "flex";

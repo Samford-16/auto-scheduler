@@ -67,5 +67,9 @@ def init_db():
         start_time TEXT, end_time TEXT, role_id INTEGER,
         workers_needed INTEGER DEFAULT 1,
         FOREIGN KEY(template_id) REFERENCES schedule_templates(id))""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS last_shift_requirements (
+        company_id INTEGER PRIMARY KEY,
+        shifts_json TEXT NOT NULL,
+        FOREIGN KEY(company_id) REFERENCES companies(id))""")
     conn.commit()
     conn.close()
