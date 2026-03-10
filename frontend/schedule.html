@@ -459,6 +459,7 @@
         const t = data.templates.find(x => x.id === id);
         if (!t) return;
         document.getElementById("shifts-builder").innerHTML = "";
+        document.getElementById("schedule-card").style.display = "none";
         t.shifts.forEach(s => {
           const row = document.createElement("div");
           row.className = "shift-row";
