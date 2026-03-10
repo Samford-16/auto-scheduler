@@ -283,7 +283,7 @@
     function shiftBlock(s, compact=false) {
       return `<div class="shift-block" onclick="openModal(${s.id})">
         <button class="s-del" onclick="event.stopPropagation();deleteShift(${s.id})">×</button>
-        <div class="s-name">${s.worker}</div>
+        <div class="s-name">${s.worker || "Unassigned"}</div>
         ${!compact ? `<div class="s-time">${s.start_time}–${s.end_time}</div>` : ''}
         ${s.role && !compact ? `<div class="s-time">${s.role}</div>` : ''}
       </div>`;
@@ -317,7 +317,7 @@
         sorted.forEach(s => {
           html += `<div class="day-shift-card" onclick="openModal(${s.id})">
             <div class="day-shift-time">${s.start_time} – ${s.end_time}</div>
-            <div><div class="day-shift-worker">${s.worker}</div><div class="day-shift-role">${s.role || 'No role'}</div></div>
+            <div><div class="day-shift-worker">${s.worker || "Unassigned"}</div><div class="day-shift-role">${s.role || 'No role'}</div></div>
             <div class="day-shift-del"><button class="btn btn-danger-soft" style="border:1px solid rgba(248,113,113,0.25)" onclick="event.stopPropagation();deleteShift(${s.id})">Remove</button></div>
           </div>`;
         });
@@ -415,7 +415,7 @@
       const s = allSchedule.find(x => x.id === id);
       if (!s) return;
       document.getElementById("modal-body").innerHTML = `
-        <div class="modal-row"><span>Worker</span><strong>${s.worker}</strong></div>
+        <div class="modal-row"><span>Worker</span><strong>${s.worker || "Unassigned"}</strong></div>
         <div class="modal-row"><span>Day</span><strong>${s.day}</strong></div>
         <div class="modal-row"><span>Start</span><strong>${s.start_time}</strong></div>
         <div class="modal-row"><span>End</span><strong>${s.end_time}</strong></div>
