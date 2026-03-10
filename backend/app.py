@@ -34,13 +34,16 @@ def auth_required():
 # ──────────────────────────────────────────────
 
 def log_action(company_id, action, detail=""):
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO audit_log (company_id, action, detail, timestamp) VALUES (?, ?, ?, ?)",
-        (company_id, action, detail, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO audit_log (company_id, action, detail, timestamp) VALUES (?, ?, ?, ?)",
+            (company_id, action, detail, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[audit log error] {e}")
 
 # ──────────────────────────────────────────────
 # AUTH ROUTES
