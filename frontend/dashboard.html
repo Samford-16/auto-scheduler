@@ -6,6 +6,14 @@
   <title>Workers — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    @media print {
+      .sidebar, .page-header button, .btn, .stats, #conflicts-section { display: none !important; }
+      .main-content { padding: 0 !important; }
+      body { background: white !important; color: black !important; }
+      table { font-size: 0.85rem; }
+    }
+  </style>
 </head>
 <body>
   <div class="app-layout">
@@ -16,6 +24,7 @@
         <a href="dashboard.html" class="nav-item active" data-page="dashboard"><span class="icon">👥</span> Workers</a>
         <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
         <a href="calendar.html" class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <a href="schedule-history.html" class="nav-item" data-page="history"><span class="icon">🗂</span> History</a>
         <span class="sidebar-section">Account</span>
         <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
         <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
@@ -36,7 +45,7 @@
           <h1>Workers</h1>
           <p class="subtitle">Manage your team's availability, roles, and hours.</p>
         </div>
-        <a href="add-worker.html" class="btn btn-primary">+ Add Worker</a>
+        <div style="display:flex;gap:0.5rem"><button class="btn btn-ghost" onclick="window.print()">🖨 Print Roster</button><a href="add-worker.html" class="btn btn-primary">+ Add Worker</a></div>
       </div>
 
       <div class="stats">
@@ -109,6 +118,15 @@
       return conflicts;
     }
 
+    function saveNote(workerId, note) {
+      fetch(`${API}/worker-note/${workerId}`, {
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({ note })
+      }).then(r => r.json()).then(d => {
+        if (d.status === "success") showToast("Note saved");
+      });
+    }
+
     function loadWorkers() {
       Promise.all([
         fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()),
@@ -145,16 +163,28 @@
           <tr>
             <td><strong>${w.name}</strong></td>
             <td>${w.max_hours} hrs/wk</td>
+            <td>
+              <div style="font-size:0.8rem;margin-bottom:0.25rem;color:var(--text-secondary)">${(hoursMap[w.name]||0).toFixed(1)} / ${w.max_hours}h</div>
+              <div style="background:var(--surface2);border-radius:99px;height:6px;width:80px;overflow:hidden">
+                <div style="height:100%;border-radius:99px;width:${Math.min(100,((hoursMap[w.name]||0)/w.max_hours)*100)}%;background:${(hoursMap[w.name]||0)>w.max_hours?'#f87171':'var(--accent)'}"></div>
+              </div>
+            </td>
             <td><span class="badge ${w.overtime === 'yes' ? 'badge-yes' : 'badge-no'}">${w.overtime === 'yes' ? 'Yes' : 'No'}</span></td>
             <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td>
+              <input type="text" value="${w.notes||''}" placeholder="Add note..."
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.3rem 0.5rem;border-radius:5px;font-size:0.78rem;font-family:inherit;width:140px;outline:none"
+                onblur="saveNote(${w.id}, this.value)"
+                onkeydown="if(event.key==='Enter')this.blur()">
+            </td>
             <td>
               <a href="edit-worker.html?id=${w.id}" class="btn btn-ghost" style="font-size:0.8rem;padding:0.3rem 0.7rem;margin-right:0.25rem">Edit</a>
               <button class="btn btn-danger-soft" onclick="deleteWorker(${w.id}, '${w.name}')">Remove</button>
             </td>
           </tr>`).join("");
         document.getElementById("workers-container").innerHTML = `
-          <table><thead><tr><th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th></th></tr></thead>
+          <table><thead><tr><th>Name</th><th>Max Hours</th><th>Scheduled</th><th>Overtime</th><th>Roles</th><th>Availability</th><th>Notes</th><th></th></tr></thead>
           <tbody>${tbody}</tbody></table>`;
       });
     }

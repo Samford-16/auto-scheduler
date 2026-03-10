@@ -32,6 +32,7 @@
         <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
         <a href="schedule.html" class="nav-item active" data-page="schedule"><span class="icon">📅</span> Schedule</a>
         <a href="calendar.html" class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <a href="schedule-history.html" class="nav-item" data-page="history"><span class="icon">🗂</span> History</a>
         <span class="sidebar-section">Account</span>
         <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
         <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
@@ -61,6 +62,7 @@
         <div id="shifts-builder"></div>
         <div class="actions">
           <button class="btn btn-ghost" onclick="addShiftRow()">+ Add Shift</button>
+          <button class="btn btn-ghost" onclick="openTemplateModal()">📋 Templates</button>
           <button class="btn btn-primary" onclick="generateSchedule()">Generate Schedule</button>
         </div>
       </div>
@@ -93,6 +95,30 @@
         <div id="schedule-output"></div>
       </div>
     </main>
+  </div>
+
+
+  <!-- Template Modal -->
+  <div class="modal-overlay" id="template-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-title">Schedule Templates</div>
+      <div id="template-list" style="margin-bottom:1rem;max-height:200px;overflow-y:auto"></div>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <input type="text" id="template-name-input" placeholder="Template name..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+        <button class="btn btn-primary" onclick="saveTemplate()" style="white-space:nowrap">Save Current</button>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="document.getElementById('template-modal').style.display='none'">Close</button></div>
+    </div>
+  </div>
+
+  <!-- Swap Modal -->
+  <div class="modal-overlay" id="swap-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" style="max-width:360px">
+      <div class="modal-title">Swap Worker</div>
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem" id="swap-desc">Select a replacement worker for this shift.</p>
+      <div id="swap-worker-list"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="document.getElementById('swap-modal').style.display='none'">Cancel</button></div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -208,7 +234,7 @@
               <td>${s.start_time}</td>
               <td>${s.end_time}</td>
               <td>${s.role ? `<span class="role-chip">${s.role}</span>` : '—'}</td>
-              <td class="no-print"><button class="btn btn-danger-soft" onclick="deleteShift(${s.id})">Remove</button></td>
+              <td class="no-print" style="display:flex;gap:0.4rem"><button class="btn btn-ghost" style="font-size:0.78rem;padding:0.25rem 0.5rem" onclick="openSwapModal(${s.id},'${s.worker}','${s.day}')">⇄ Swap</button><button class="btn btn-danger-soft" onclick="deleteShift(${s.id})">Remove</button></td>
             </tr>`;
           });
         }
@@ -240,6 +266,116 @@
       a.download = `${company ? company.name.replace(/\s+/g,"-") : "schedule"}-schedule.csv`;
       a.click();
       URL.revokeObjectURL(url);
+    }
+
+    // ── TEMPLATES ──────────────────────────────────────
+    function openTemplateModal() {
+      loadTemplates();
+      document.getElementById("template-modal").style.display = "flex";
+    }
+
+    function loadTemplates() {
+      fetch(`${API}/templates`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+        const templates = data.templates || [];
+        const el = document.getElementById("template-list");
+        if (!templates.length) {
+          el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem">No templates saved yet.</p>';
+          return;
+        }
+        el.innerHTML = templates.map(t => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:0.85rem;color:var(--text)">${t.name} <span style="color:var(--text-muted)">(${t.shifts.length} shifts)</span></span>
+            <div style="display:flex;gap:0.4rem">
+              <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="loadTemplate(${t.id})">Load</button>
+              <button class="btn btn-danger-soft" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="deleteTemplate(${t.id})">Delete</button>
+            </div>
+          </div>`).join("");
+      });
+    }
+
+    function saveTemplate() {
+      const name = document.getElementById("template-name-input").value.trim();
+      if (!name) { showToast("Enter a template name", "error"); return; }
+      const rows = document.querySelectorAll(".shift-row");
+      const shifts = [...rows].map(row => ({
+        day: row.querySelector(".s-day").value,
+        start_time: row.querySelector(".s-start").value,
+        end_time: row.querySelector(".s-end").value,
+        role_id: row.querySelector(".s-role").value,
+        workers_needed: row.querySelector(".s-needed").value
+      }));
+      if (!shifts.length) { showToast("Add shifts first", "error"); return; }
+      fetch(`${API}/templates`, {
+        method: "POST", headers: authHeaders(), body: JSON.stringify({ name, shifts })
+      }).then(r => r.json()).then(d => {
+        if (d.status === "success") { showToast("Template saved!"); document.getElementById("template-name-input").value = ""; loadTemplates(); }
+        else showToast("Failed to save template", "error");
+      });
+    }
+
+    function loadTemplate(id) {
+      fetch(`${API}/templates`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+        const t = data.templates.find(x => x.id === id);
+        if (!t) return;
+        document.getElementById("shifts-builder").innerHTML = "";
+        t.shifts.forEach(s => {
+          const row = document.createElement("div");
+          row.className = "shift-row";
+          row.innerHTML = `
+            <select class="s-day">${DAYS.map(d => `<option value="${d}"${d===s.day?' selected':''}>${d}</option>`).join("")}</select>
+            <input type="time" class="s-start" value="${s.start_time}">
+            <input type="time" class="s-end" value="${s.end_time}">
+            <select class="s-role">${roles.map(r => `<option value="${r.id}"${r.id==s.role_id?' selected':''}>${r.name}</option>`).join("")}</select>
+            <input type="number" class="s-needed" value="${s.workers_needed}" min="1" max="20">
+            <button class="btn-icon" onclick="this.parentElement.remove()">×</button>`;
+          document.getElementById("shifts-builder").appendChild(row);
+        });
+        document.getElementById("template-modal").style.display = "none";
+        showToast(`Template "${t.name}" loaded`);
+      });
+    }
+
+    function deleteTemplate(id) {
+      fetch(`${API}/templates/${id}`, { method: "DELETE", headers: authHeaders() })
+        .then(r => r.json()).then(d => {
+          if (d.status === "success") { showToast("Template deleted"); loadTemplates(); }
+        });
+    }
+
+    // ── SHIFT SWAP ─────────────────────────────────────
+    let swapShiftId = null;
+
+    function openSwapModal(shiftId, workerName, day) {
+      swapShiftId = shiftId;
+      document.getElementById("swap-desc").textContent = `Replace ${workerName} on ${day} with:`;
+      document.getElementById("swap-worker-list").innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">Loading...</p>';
+      document.getElementById("swap-modal").style.display = "flex";
+      fetch(`${API}/schedule/available-workers/${shiftId}`, { headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          const workers = data.workers || [];
+          if (!workers.length) {
+            document.getElementById("swap-worker-list").innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">No other available workers for this shift.</p>';
+            return;
+          }
+          document.getElementById("swap-worker-list").innerHTML = workers.map(w =>
+            `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:0.85rem;color:var(--text)">${w.name}</span>
+              <button class="btn btn-primary" style="font-size:0.78rem;padding:0.25rem 0.65rem" onclick="confirmSwap(${w.id},'${w.name}')">Assign</button>
+            </div>`
+          ).join("");
+        });
+    }
+
+    function confirmSwap(newWorkerId, newWorkerName) {
+      fetch(`${API}/schedule/${swapShiftId}/swap`, {
+        method: "POST", headers: authHeaders(), body: JSON.stringify({ worker_id: newWorkerId })
+      }).then(r => r.json()).then(d => {
+        if (d.status === "success") {
+          showToast(`Swapped to ${newWorkerName}`);
+          document.getElementById("swap-modal").style.display = "none";
+          loadExistingSchedule();
+        } else showToast("Swap failed", "error");
+      });
     }
   </script>
 </body>
