@@ -33,15 +33,15 @@ body.theme-dark {
 
 /* Light tinted surfaces */
 body.theme-light {
-  --accent:         hsl(var(--hue), 65%, 40%);
-  --accent-hover:   hsl(var(--hue), 65%, 32%);
-  --accent-subtle:  hsla(var(--hue), 65%, 50%, 0.08);
-  --accent-text:    hsl(var(--hue), 65%, 35%);
-  --bg:             hsl(var(--hue), 30%, 97%);
-  --surface:        hsl(var(--hue), 20%, 100%);
-  --surface2:       hsl(var(--hue), 22%, 95%);
-  --surface3:       hsl(var(--hue), 20%, 91%);
-  --border:         hsl(var(--hue), 22%, 85%);
+  --accent:         hsl(var(--hue), 75%, 38%);
+  --accent-hover:   hsl(var(--hue), 75%, 30%);
+  --accent-subtle:  hsla(var(--hue), 75%, 45%, 0.12);
+  --accent-text:    hsl(var(--hue), 75%, 33%);
+  --bg:             hsl(var(--hue), 55%, 95%);
+  --surface:        hsl(var(--hue), 40%, 99%);
+  --surface2:       hsl(var(--hue), 50%, 91%);
+  --surface3:       hsl(var(--hue), 48%, 86%);
+  --border:         hsl(var(--hue), 45%, 80%);
 }
 
 /* ─── Base ──────────────────────────────────────────── */
