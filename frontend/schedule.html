@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: #2a2a3a; --accent: #6c63ff; --accent2: #ff6584;
+      --text: #f0f0f8; --muted: #7a7a9a; --success: #4ade80; --danger: #f87171;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: var(--surface);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none;
+    }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; margin-left: 1rem; transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem; }
+    h1 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2.5rem; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
+    .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; margin-bottom: 1.5rem; }
+
+    .shifts-builder { display: flex; flex-direction: column; gap: 0.8rem; }
+    .shift-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr auto;
+      gap: 0.6rem; align-items: center;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1rem;
+    }
+    .shift-row select, .shift-row input {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 0.5rem 0.7rem; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    }
+    .shift-row select:focus, .shift-row input:focus { outline: none; border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1.5rem; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #8b7fff); color: white; box-shadow: 0 4px 16px rgba(108,99,255,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-icon { background: transparent; color: var(--danger); border: none; cursor: pointer; font-size: 1.1rem; padding: 0.3rem; }
+
+    .actions { display: flex; gap: 1rem; margin-top: 1rem; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 0.9rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 500; }
+    td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .day-header { background: rgba(108,99,255,0.1); }
+    .day-header td { font-family: 'Syne', sans-serif; font-weight: 600; color: var(--accent); padding: 0.6rem 1.5rem; font-size: 0.85rem; }
+
+    .role-chip { display: inline-block; background: rgba(108,99,255,0.15); color: var(--accent); border-radius: 100px; padding: 0.2rem 0.6rem; font-size: 0.75rem; }
+
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+
+    .label-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr auto; gap: 0.6rem; padding: 0 1rem; margin-bottom: 0.3rem; }
+    .label-row span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">A-Schedule</a>
+    <div class="nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="schedule.html" class="active">Schedule</a>
+      <a href="setup.html">Setup</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Generate Schedule</h1>
+    <p class="subtitle">Define shifts for each day, then let A-Schedule assign workers automatically.</p>
+
+    <div class="card">
+      <div class="card-title">📋 Shift Requirements</div>
+      <div class="label-row">
+        <span>Day</span><span>Start Time</span><span>End Time</span><span>Role</span><span>Workers Needed</span><span></span>
+      </div>
+      <div class="shifts-builder" id="shifts-builder"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="addShiftRow()">+ Add Shift</button>
+        <button class="btn btn-primary" onclick="generateSchedule()">⚡ Generate Schedule</button>
+      </div>
+    </div>
+
+    <div class="card" id="schedule-card" style="display:none">
+      <div class="card-title">📅 Generated Schedule</div>
+      <div id="schedule-output"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://34.28.196.192:5000";
+    let roles = [];
+    const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+    fetch(`${API}/roles`).then(r => r.json()).then(data => {
+      roles = data.roles;
+      addShiftRow();
+      loadExistingSchedule();
+    });
+
+    function roleOptions() {
+      return roles.map(r => `<option value="${r.id}">${r.name}</option>`).join("");
+    }
+
+    function dayOptions() {
+      return DAYS.map(d => `<option value="${d}">${d}</option>`).join("");
+    }
+
+    function addShiftRow() {
+      const row = document.createElement("div");
+      row.className = "shift-row";
+      row.innerHTML = `
+        <select class="s-day">${dayOptions()}</select>
+        <input type="time" class="s-start" value="04:30">
+        <input type="time" class="s-end" value="12:00">
+        <select class="s-role">${roles.length ? roleOptions() : '<option value="">No roles</option>'}</select>
+        <input type="number" class="s-needed" value="2" min="1" max="20">
+        <button class="btn-icon" onclick="this.parentElement.remove()">×</button>
+      `;
+      document.getElementById("shifts-builder").appendChild(row);
+    }
+
+    function generateSchedule() {
+      const rows = document.querySelectorAll(".shift-row");
+      const shifts = [...rows].map(row => ({
+        day: row.querySelector(".s-day").value,
+        start_time: row.querySelector(".s-start").value,
+        end_time: row.querySelector(".s-end").value,
+        role_id: row.querySelector(".s-role").value,
+        workers_needed: row.querySelector(".s-needed").value
+      }));
+
+      fetch(`${API}/generate-schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shifts })
+      }).then(r => r.json()).then(data => {
+        loadExistingSchedule();
+      });
+    }
+
+    function loadExistingSchedule() {
+      fetch(`${API}/schedule`).then(r => r.json()).then(data => {
+        const schedule = data.schedule;
+        const card = document.getElementById("schedule-card");
+        const output = document.getElementById("schedule-output");
+
+        if (!schedule.length) {
+          card.style.display = "none";
+          return;
+        }
+
+        card.style.display = "block";
+
+        // Group by day
+        const byDay = {};
+        schedule.forEach(s => {
+          if (!byDay[s.day]) byDay[s.day] = [];
+          byDay[s.day].push(s);
+        });
+
+        let html = `<table><thead><tr><th>Worker</th><th>Start</th><th>End</th><th>Role</th></tr></thead><tbody>`;
+        for (const day of DAYS) {
+          if (!byDay[day]) continue;
+          html += `<tr class="day-header"><td colspan="4">${day}</td></tr>`;
+          byDay[day].forEach(s => {
+            html += `<tr>
+              <td><strong>${s.worker}</strong></td>
+              <td>${s.start_time}</td>
+              <td>${s.end_time}</td>
+              <td>${s.role ? `<span class="role-chip">${s.role}</span>` : '—'}</td>
+            </tr>`;
+          });
+        }
+        html += `</tbody></table>`;
+        output.innerHTML = html;
+      });
+    }
+  </script>
+</body>
+</html>

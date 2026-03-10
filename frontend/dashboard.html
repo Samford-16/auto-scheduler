@@ -1,51 +1,221 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: #2a2a3a; --accent: #6c63ff; --accent2: #ff6584;
+      --text: #f0f0f8; --muted: #7a7a9a; --success: #4ade80; --danger: #f87171;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
-<title>Dashboard</title>
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: var(--surface);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 1rem; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .company-pill {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 100px;
+      padding: 0.35rem 0.9rem; font-size: 0.8rem; color: var(--muted);
+    }
+    .company-pill span { color: var(--accent); }
 
-<link rel="stylesheet" href="css/style.css">
+    .container { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem; }
 
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; flex-wrap: gap; }
+    h1 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 0.2rem; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1.5rem; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #8b7fff); color: white; box-shadow: 0 4px 16px rgba(108,99,255,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+    .btn-danger:hover { border-color: var(--danger); background: rgba(248,113,113,0.1); }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.5rem;
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; }
+    .stat-value.accent { color: var(--accent); }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.3rem 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 0.9rem 1.5rem; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+      border-bottom: 1px solid var(--border); font-weight: 500;
+    }
+    td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block; padding: 0.25rem 0.6rem; border-radius: 100px;
+      font-size: 0.75rem; font-weight: 500;
+    }
+    .badge-yes { background: rgba(74,222,128,0.15); color: var(--success); }
+    .badge-no { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+    .role-chip {
+      display: inline-block; background: rgba(108,99,255,0.15); color: var(--accent);
+      border-radius: 100px; padding: 0.2rem 0.6rem; font-size: 0.75rem; margin: 0.1rem;
+    }
+
+    .days-chip {
+      display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.75rem; margin: 0.1rem; color: var(--muted);
+    }
+
+    .empty-state {
+      text-align: center; padding: 4rem 2rem; color: var(--muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { margin-bottom: 1.5rem; }
+
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.5rem;
+      font-size: 0.9rem; transform: translateY(100px); opacity: 0;
+      transition: all 0.3s ease; z-index: 100;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+  </style>
 </head>
-
 <body>
+  <nav>
+    <a href="index.html" class="nav-logo">A-Schedule</a>
+    <div class="nav-links">
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="schedule.html">Schedule</a>
+      <a href="setup.html">Setup</a>
+      <div class="company-pill">📍 <span id="company-name">Loading...</span></div>
+    </div>
+  </nav>
 
-<h2>Admin Dashboard</h2>
+  <div class="container">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem;">
+      <div>
+        <h1>Workers</h1>
+        <p class="subtitle">Manage your team's availability, roles, and hours.</p>
+      </div>
+      <a href="add-worker.html" class="btn btn-primary">+ Add Worker</a>
+    </div>
 
-<a href="add-worker.html">
-<button>Add Worker</button>
-</a>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Workers</div>
+        <div class="stat-value accent" id="stat-workers">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overtime Eligible</div>
+        <div class="stat-value" id="stat-ot">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Max Weekly Hours</div>
+        <div class="stat-value" id="stat-hours">—</div>
+      </div>
+    </div>
 
-<button>Enter Availability</button>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Team Roster</div>
+      </div>
+      <div id="workers-container">
+        <div class="empty-state">
+          <div class="icon">👥</div>
+          <p>No workers added yet.</p>
+          <a href="add-worker.html" class="btn btn-primary">Add your first worker</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<button>Generate Schedule</button>
+  <div class="toast" id="toast"></div>
 
-<button>View Schedule</button>
+  <script>
+    const API = "http://34.28.196.192:5000";
 
-<h2>Workers</h2>
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.className = `toast ${type} show`;
+      setTimeout(() => t.className = "toast", 3000);
+    }
 
-<table border="1">
+    fetch(`${API}/company`).then(r => r.json()).then(data => {
+      document.getElementById("company-name").textContent = data.company ? data.company.name : "No company set";
+    });
 
-<thead>
+    function loadWorkers() {
+      fetch(`${API}/workers`).then(r => r.json()).then(data => {
+        const workers = data.workers;
+        document.getElementById("stat-workers").textContent = workers.length;
+        document.getElementById("stat-ot").textContent = workers.filter(w => w.overtime === "yes").length;
+        const totalHours = workers.reduce((s, w) => s + w.max_hours, 0);
+        document.getElementById("stat-hours").textContent = totalHours;
 
-<tr>
+        if (!workers.length) return;
 
-<th>Name</th>
-<th>Max Hours</th>
-<th>Overtime</th>
-<th>Action</th>
+        const tbody = workers.map(w => `
+          <tr>
+            <td><strong>${w.name}</strong></td>
+            <td>${w.max_hours} hrs/wk</td>
+            <td><span class="badge ${w.overtime === 'yes' ? 'badge-yes' : 'badge-no'}">${w.overtime === 'yes' ? 'Yes' : 'No'}</span></td>
+            <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--muted)">—</span>'}</td>
+            <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--muted)">—</span>'}</td>
+            <td><button class="btn btn-danger" onclick="deleteWorker(${w.id}, '${w.name}')">Delete</button></td>
+          </tr>
+        `).join("");
 
-</tr>
+        document.getElementById("workers-container").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        `;
+      });
+    }
 
-</thead>
+    function deleteWorker(id, name) {
+      if (!confirm(`Remove ${name}?`)) return;
+      fetch(`${API}/delete-worker/${id}`, { method: "DELETE" })
+        .then(() => { showToast(`${name} removed`); loadWorkers(); });
+    }
 
-<tbody id="workers-table"></tbody>
-
-</table>
-
-<script src="js/workers.js"></script>
-
+    loadWorkers();
+  </script>
 </body>
-
 </html>
