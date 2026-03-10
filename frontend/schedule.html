@@ -214,7 +214,16 @@
       }));
       fetch(`${API}/generate-schedule`, {
         method: "POST", headers: authHeaders(), body: JSON.stringify({ shifts })
-      }).then(() => { showToast("Schedule generated!"); loadExistingSchedule(); });
+      }).then(r => r.json()).then(data => {
+        const unfilled = data.unassigned || [];
+        if (unfilled.length > 0) {
+          const total = unfilled.reduce((sum, u) => sum + (u.needed - u.filled), 0);
+          showToast(`Schedule generated — ${total} slot(s) unfilled due to worker shortage`, "error");
+        } else {
+          showToast("Schedule generated! All slots filled ✓");
+        }
+        loadExistingSchedule();
+      });
     }
 
     function clearSchedule() {
@@ -277,7 +286,7 @@
           const slots = {};
           shifts.forEach(s => {
             const key = `${s.start_time}-${s.end_time}-${s.role||''}`;
-            if (!slots[key]) slots[key] = { start: s.start_time, end: s.end_time, role: s.role, workers: [] };
+            if (!slots[key]) slots[key] = { start: s.start_time, end: s.end_time, role: s.role, workers: [], needed: 0 };
             slots[key].workers.push(s);
           });
 
