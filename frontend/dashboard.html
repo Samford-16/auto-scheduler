@@ -159,6 +159,16 @@
         }
 
         if (!workers.length) return;
+
+        // Build hoursMap for the hours tracker bars
+        const hoursMap = {};
+        schedule.forEach(s => {
+          if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
+          const [sh, sm] = s.start_time.split(":").map(Number);
+          const [eh, em] = s.end_time.split(":").map(Number);
+          hoursMap[s.worker] += (eh + em / 60) - (sh + sm / 60);
+        });
+
         const tbody = workers.map(w => `
           <tr>
             <td><strong>${w.name}</strong></td>
