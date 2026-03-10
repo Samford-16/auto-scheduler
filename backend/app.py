@@ -379,5 +379,43 @@ def get_schedule():
     conn.close()
     return jsonify({"schedule": [dict(r) for r in rows]})
 
+@app.route('/schedule', methods=['DELETE'])
+def clear_schedule():
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    conn = get_db()
+    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    if not company:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+
+    conn.execute('DELETE FROM schedule WHERE company_id = ?', (company['id'],))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Schedule cleared'})
+
+
+@app.route('/schedule/<int:shift_id>', methods=['DELETE'])
+def delete_shift(shift_id):
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    conn = get_db()
+    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    if not company:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+
+    # Verify ownership before deleting
+    shift = conn.execute(
+        'SELECT * FROM schedule WHERE id = ? AND company_id = ?',
+        (shift_id, company['id'])
+    ).fetchone()
+    if not shift:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Shift not found'}), 404
+
+    conn.execute('DELETE FROM schedule WHERE id = ?', (shift_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Shift deleted'})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -31,6 +31,7 @@
         <span class="sidebar-section">Workspace</span>
         <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
         <a href="schedule.html" class="nav-item active" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <a href="calendar.html" class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
         <span class="sidebar-section">Account</span>
         <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
         <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
@@ -63,23 +64,24 @@
         </div>
       </div>
 
-      <!-- Schedule output -->
+      <!-- Generated schedule -->
       <div class="card" id="schedule-card" style="display:none">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem">
           <div class="card-title-lg" style="margin-bottom:0">Generated Schedule</div>
           <div style="display:flex; gap:0.5rem" class="no-print">
             <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:0.82rem">⬇ Export CSV</button>
             <button class="btn btn-ghost" onclick="exportPDF()" style="font-size:0.82rem">🖨 Print / PDF</button>
+            <button class="btn btn-ghost" onclick="clearSchedule()" style="font-size:0.82rem;color:#f87171;border-color:rgba(248,113,113,0.3)">🗑 Clear All</button>
           </div>
         </div>
 
-        <!-- Print header (only visible when printing) -->
+        <!-- Print header -->
         <div class="print-header">
           <h2 id="print-company-name">Weekly Schedule</h2>
           <p id="print-date"></p>
         </div>
 
-        <!-- Schedule stats -->
+        <!-- Quick stats -->
         <div id="schedule-stats" style="display:flex; gap:1.5rem; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border)" class="no-print">
           <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Shifts Filled</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-filled">—</div></div>
           <div><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Workers Scheduled</span><div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-top:0.2rem" id="sched-stat-workers">—</div></div>
@@ -92,6 +94,8 @@
     </main>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
@@ -100,6 +104,12 @@
     let roles = [];
     let currentSchedule = [];
     const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.className = `toast ${type} show`;
+      setTimeout(() => t.className = "toast", 3000);
+    }
 
     fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       roles = data.roles || [];
@@ -132,8 +142,35 @@
         role_id: row.querySelector(".s-role").value,
         workers_needed: row.querySelector(".s-needed").value
       }));
-      fetch(`${API}/generate-schedule`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ shifts }) })
-        .then(() => loadExistingSchedule());
+      fetch(`${API}/generate-schedule`, {
+        method: "POST", headers: authHeaders(), body: JSON.stringify({ shifts })
+      }).then(() => { showToast("Schedule generated!"); loadExistingSchedule(); });
+    }
+
+    function clearSchedule() {
+      if (!confirm("Clear the entire schedule? This cannot be undone.")) return;
+      fetch(`${API}/schedule`, { method: "DELETE", headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          if (data.status === "success") {
+            showToast("Schedule cleared");
+            document.getElementById("schedule-card").style.display = "none";
+            currentSchedule = [];
+          } else {
+            showToast("Failed to clear schedule", "error");
+          }
+        });
+    }
+
+    function deleteShift(id) {
+      fetch(`${API}/schedule/${id}`, { method: "DELETE", headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          if (data.status === "success") {
+            showToast("Shift removed");
+            loadExistingSchedule();
+          } else {
+            showToast("Failed to remove shift", "error");
+          }
+        });
     }
 
     function loadExistingSchedule() {
@@ -143,7 +180,7 @@
         if (!currentSchedule.length) { card.style.display = "none"; return; }
         card.style.display = "block";
 
-        // Schedule stats
+        // Stats
         const uniqueWorkers = new Set(currentSchedule.map(s => s.worker)).size;
         const uniqueDays = new Set(currentSchedule.map(s => s.day)).size;
         let totalHours = 0;
@@ -157,15 +194,21 @@
         document.getElementById("sched-stat-days").textContent = uniqueDays;
         document.getElementById("sched-stat-hours").textContent = `${totalHours.toFixed(1)}h`;
 
-        // Table
+        // Table — now includes delete button per row
         const byDay = {};
         currentSchedule.forEach(s => { if (!byDay[s.day]) byDay[s.day] = []; byDay[s.day].push(s); });
-        let html = `<table><thead><tr><th>Worker</th><th>Start</th><th>End</th><th>Role</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Worker</th><th>Start</th><th>End</th><th>Role</th><th class="no-print"></th></tr></thead><tbody>`;
         for (const day of DAYS) {
           if (!byDay[day]) continue;
-          html += `<tr class="day-header"><td colspan="4">${day}</td></tr>`;
+          html += `<tr class="day-header"><td colspan="5">${day}</td></tr>`;
           byDay[day].forEach(s => {
-            html += `<tr><td><strong>${s.worker}</strong></td><td>${s.start_time}</td><td>${s.end_time}</td><td>${s.role ? `<span class="role-chip">${s.role}</span>` : '—'}</td></tr>`;
+            html += `<tr>
+              <td><strong>${s.worker}</strong></td>
+              <td>${s.start_time}</td>
+              <td>${s.end_time}</td>
+              <td>${s.role ? `<span class="role-chip">${s.role}</span>` : '—'}</td>
+              <td class="no-print"><button class="btn btn-danger-soft" onclick="deleteShift(${s.id})">Remove</button></td>
+            </tr>`;
           });
         }
         html += `</tbody></table>`;
