@@ -21,6 +21,18 @@
     .print-header { display: none; margin-bottom: 1rem; }
     .print-header h2 { font-size: 1.2rem; }
     .print-header p { font-size: 0.85rem; color: #666; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 500;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 400px;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; justify-content: flex-end; }
   </style>
 </head>
 <body>
