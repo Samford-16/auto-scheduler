@@ -8,40 +8,65 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <nav>
-    <a href="index.html" class="nav-logo">A-Schedule</a>
-    <div class="nav-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="schedule.html" class="active">Schedule</a>
-      <a href="setup.html">Setup</a>
-      <div class="nav-company" id="nav-company">—</div>
-      <button class="btn-logout" onclick="logout()">Sign Out</button>
-    </div>
-  </nav>
+  <div class="app-layout">
 
-  <div class="container">
-    <h1>Generate Schedule</h1>
-    <p class="subtitle-lg">Define shifts for each day, then let A-Schedule assign workers automatically.</p>
-
-    <div class="card">
-      <div class="card-title">📋 Shift Requirements</div>
-      <div class="label-row"><span>Day</span><span>Start Time</span><span>End Time</span><span>Role</span><span>Workers Needed</span><span></span></div>
-      <div id="shifts-builder"></div>
-      <div class="actions">
-        <button class="btn btn-ghost" onclick="addShiftRow()">+ Add Shift</button>
-        <button class="btn btn-primary" onclick="generateSchedule()">⚡ Generate Schedule</button>
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">A-Schedule</a>
+      <nav class="sidebar-nav">
+        <span class="sidebar-section">Workspace</span>
+        <a href="dashboard.html" class="nav-item" data-page="dashboard">
+          <span class="icon">👥</span> Workers
+        </a>
+        <a href="schedule.html" class="nav-item active" data-page="schedule">
+          <span class="icon">📅</span> Schedule
+        </a>
+        <a href="setup.html" class="nav-item" data-page="setup">
+          <span class="icon">⚙️</span> Setup
+        </a>
+        <a href="add-worker.html" class="nav-item" data-page="add-worker">
+          <span class="icon">➕</span> Add Worker
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-company">
+          <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
+          <span class="sidebar-company-name" id="sidebar-company-name">—</span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="color:var(--danger)">
+          <span class="icon">🚪</span> Sign Out
+        </button>
       </div>
-    </div>
+    </aside>
 
-    <div class="card" id="schedule-card" style="display:none">
-      <div class="card-title">📅 Generated Schedule</div>
-      <div id="schedule-output"></div>
-    </div>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1>Schedule</h1>
+          <p class="subtitle">Define shifts and auto-assign workers based on availability and roles.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-lg">📋 Shift Requirements</div>
+        <div class="label-row"><span>Day</span><span>Start</span><span>End</span><span>Role</span><span>Needed</span><span></span></div>
+        <div id="shifts-builder"></div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="addShiftRow()">+ Add Shift</button>
+          <button class="btn btn-primary" onclick="generateSchedule()">⚡ Generate Schedule</button>
+        </div>
+      </div>
+
+      <div class="card" id="schedule-card" style="display:none">
+        <div class="card-title-lg">📅 Generated Schedule</div>
+        <div id="schedule-output"></div>
+      </div>
+    </main>
   </div>
 
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
+    initSidebar("schedule");
 
     let roles = [];
     const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -52,7 +77,7 @@
       loadExistingSchedule();
     });
 
-    function roleOptions() { return roles.map(r => `<option value="${r.id}">${r.name}</option>`).join(""); }
+    function roleOptions() { return roles.length ? roles.map(r => `<option value="${r.id}">${r.name}</option>`).join("") : '<option value="">No roles</option>'; }
     function dayOptions() { return DAYS.map(d => `<option value="${d}">${d}</option>`).join(""); }
 
     function addShiftRow() {
@@ -60,10 +85,10 @@
       row.className = "shift-row";
       row.innerHTML = `
         <select class="s-day">${dayOptions()}</select>
-        <input type="time" class="s-start" value="04:30">
-        <input type="time" class="s-end" value="12:00">
-        <select class="s-role">${roles.length ? roleOptions() : '<option value="">No roles</option>'}</select>
-        <input type="number" class="s-needed" value="2" min="1" max="20">
+        <input type="time" class="s-start" value="09:00">
+        <input type="time" class="s-end" value="17:00">
+        <select class="s-role">${roleOptions()}</select>
+        <input type="number" class="s-needed" value="1" min="1" max="20">
         <button class="btn-icon" onclick="this.parentElement.remove()">×</button>`;
       document.getElementById("shifts-builder").appendChild(row);
     }

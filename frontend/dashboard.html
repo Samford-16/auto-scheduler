@@ -8,42 +8,64 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <nav>
-    <a href="index.html" class="nav-logo">A-Schedule</a>
-    <div class="nav-links">
-      <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="schedule.html">Schedule</a>
-      <a href="setup.html">Setup</a>
-      <div class="nav-company" id="nav-company">—</div>
-      <button class="btn-logout" onclick="logout()">Sign Out</button>
-    </div>
-  </nav>
+  <div class="app-layout">
 
-  <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem;">
-      <div>
-        <h1>Workers</h1>
-        <p class="subtitle">Manage your team's availability, roles, and hours.</p>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">A-Schedule</a>
+      <nav class="sidebar-nav">
+        <span class="sidebar-section">Workspace</span>
+        <a href="dashboard.html" class="nav-item active" data-page="dashboard">
+          <span class="icon">👥</span> Workers
+        </a>
+        <a href="schedule.html" class="nav-item" data-page="schedule">
+          <span class="icon">📅</span> Schedule
+        </a>
+        <a href="setup.html" class="nav-item" data-page="setup">
+          <span class="icon">⚙️</span> Setup
+        </a>
+        <a href="add-worker.html" class="nav-item" data-page="add-worker">
+          <span class="icon">➕</span> Add Worker
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-company">
+          <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
+          <span class="sidebar-company-name" id="sidebar-company-name">—</span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="color:var(--danger)">
+          <span class="icon">🚪</span> Sign Out
+        </button>
       </div>
-      <a href="add-worker.html" class="btn btn-primary">+ Add Worker</a>
-    </div>
+    </aside>
 
-    <div class="stats">
-      <div class="stat-card"><div class="stat-label">Total Workers</div><div class="stat-value accent" id="stat-workers">—</div></div>
-      <div class="stat-card"><div class="stat-label">Overtime Eligible</div><div class="stat-value" id="stat-ot">—</div></div>
-      <div class="stat-card"><div class="stat-label">Max Weekly Hours</div><div class="stat-value" id="stat-hours">—</div></div>
-    </div>
+    <!-- Main -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1>Workers</h1>
+          <p class="subtitle">Manage your team's availability, roles, and hours.</p>
+        </div>
+        <a href="add-worker.html" class="btn btn-primary">+ Add Worker</a>
+      </div>
 
-    <div class="card-overflow">
-      <div class="card-header"><div class="card-title">Team Roster</div></div>
-      <div id="workers-container">
-        <div class="empty-state">
-          <div class="icon">👥</div>
-          <p>No workers added yet.</p>
-          <a href="add-worker.html" class="btn btn-primary">Add your first worker</a>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Total Workers</div><div class="stat-value accent" id="stat-workers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Overtime Eligible</div><div class="stat-value" id="stat-ot">—</div></div>
+        <div class="stat-card"><div class="stat-label">Max Weekly Hours</div><div class="stat-value" id="stat-hours">—</div></div>
+      </div>
+
+      <div class="card-overflow">
+        <div class="card-header"><div class="card-title">Team Roster</div></div>
+        <div id="workers-container">
+          <div class="empty-state">
+            <div class="icon">👥</div>
+            <p>No workers added yet.</p>
+            <a href="add-worker.html" class="btn btn-primary">Add your first worker</a>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -51,6 +73,7 @@
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
+    initSidebar("dashboard");
 
     function showToast(msg, type = "success") {
       const t = document.getElementById("toast");
@@ -75,7 +98,7 @@
             <td><button class="btn btn-danger" onclick="deleteWorker(${w.id}, '${w.name}')">Delete</button></td>
           </tr>`).join("");
         document.getElementById("workers-container").innerHTML = `
-          <table><thead><tr><th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th>Action</th></tr></thead>
+          <table><thead><tr><th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th></th></tr></thead>
           <tbody>${tbody}</tbody></table>`;
       });
     }

@@ -29,7 +29,7 @@
       <span class="hint">At least 6 characters</span>
     </div>
 
-    <button class="btn btn-primary-lg" onclick="signup()">Create Account</button>
+    <button class="btn btn-primary btn-full" onclick="signup()">Create Account →</button>
     <p class="footer-link">Already have an account? <a href="login.html">Sign in</a></p>
   </div>
 
@@ -52,7 +52,7 @@
         if (data.status === "success") {
           localStorage.setItem("token", data.token);
           localStorage.setItem("company", JSON.stringify(data.company));
-          window.location.href = "dashboard.html";
+          window.location.href = "onboarding.html";
         } else {
           err.textContent = data.message || "Signup failed.";
           err.style.display = "block";
@@ -62,35 +62,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

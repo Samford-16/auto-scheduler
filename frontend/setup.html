@@ -3,48 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Company Setup — A-Schedule</title>
+  <title>Setup — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <nav>
-    <a href="index.html" class="nav-logo">A-Schedule</a>
-    <div class="nav-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="setup.html" class="active">Setup</a>
-      <div class="nav-company" id="nav-company">—</div>
-      <button class="btn-logout" onclick="logout()">Sign Out</button>
-    </div>
-  </nav>
+  <div class="app-layout">
 
-  <div class="container-sm">
-    <h2>Company Setup</h2>
-    <p class="subtitle-lg">Configure your business details, operating hours, and employee roles.</p>
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">A-Schedule</a>
+      <nav class="sidebar-nav">
+        <span class="sidebar-section">Workspace</span>
+        <a href="dashboard.html" class="nav-item" data-page="dashboard">
+          <span class="icon">👥</span> Workers
+        </a>
+        <a href="schedule.html" class="nav-item" data-page="schedule">
+          <span class="icon">📅</span> Schedule
+        </a>
+        <a href="setup.html" class="nav-item active" data-page="setup">
+          <span class="icon">⚙️</span> Setup
+        </a>
+        <a href="add-worker.html" class="nav-item" data-page="add-worker">
+          <span class="icon">➕</span> Add Worker
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-company">
+          <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
+          <span class="sidebar-company-name" id="sidebar-company-name">—</span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="color:var(--danger)">
+          <span class="icon">🚪</span> Sign Out
+        </button>
+      </div>
+    </aside>
 
-    <div class="card">
-      <div class="card-title-lg">🏢 Business Info</div>
-      <div class="form-group">
-        <label>Company Name</label>
-        <input type="text" id="company-name" placeholder="e.g. Dunkin' — Main St">
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1>Setup</h1>
+          <p class="subtitle">Configure your business details, hours, and roles.</p>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Opening Time</label><input type="time" id="open-time"></div>
-        <div class="form-group"><label>Closing Time</label><input type="time" id="close-time"></div>
-      </div>
-      <button class="btn btn-primary" onclick="saveCompany()">💾 Save Company Info</button>
-    </div>
 
-    <div class="card">
-      <div class="card-title-lg">🎭 Roles & Positions</div>
-      <div class="roles-list" id="roles-list">
-        <span style="color:var(--muted);font-size:0.85rem">No roles yet...</span>
+      <div class="card" style="max-width:640px">
+        <div class="card-title-lg">🏢 Business Info</div>
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" id="company-name" placeholder="e.g. Dunkin' — Main St">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Opening Time</label><input type="time" id="open-time"></div>
+          <div class="form-group"><label>Closing Time</label><input type="time" id="close-time"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveCompany()">💾 Save</button>
       </div>
-      <div class="add-role-row">
-        <input type="text" id="role-input" placeholder="e.g. Drive-thru, Barista, Cashier..." onkeydown="if(event.key==='Enter') addRole()">
-        <button class="btn btn-primary" onclick="addRole()">+ Add Role</button>
+
+      <div class="card" style="max-width:640px">
+        <div class="card-title-lg">🎭 Roles & Positions</div>
+        <div class="roles-list" id="roles-list">
+          <span style="color:var(--muted);font-size:0.85rem">No roles yet...</span>
+        </div>
+        <div class="add-role-row">
+          <input type="text" id="role-input" placeholder="e.g. Drive-thru, Barista, Cashier..." onkeydown="if(event.key==='Enter') addRole()">
+          <button class="btn btn-primary" onclick="addRole()">+ Add Role</button>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -52,6 +77,7 @@
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
+    initSidebar("setup");
 
     function showToast(msg, type = "success") {
       const t = document.getElementById("toast");
@@ -60,26 +86,23 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      const token = localStorage.getItem("token");
-      fetch(`${API}/me`, { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } })
-        .then(r => r.json()).then(data => {
-          if (data.company) {
-            document.getElementById("company-name").value = data.company.name || "";
-            document.getElementById("open-time").value = data.company.open_time || "";
-            document.getElementById("close-time").value = data.company.close_time || "";
-          }
-        });
+      fetch(`${API}/me`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+        if (data.company) {
+          document.getElementById("company-name").value = data.company.name || "";
+          document.getElementById("open-time").value = data.company.open_time || "";
+          document.getElementById("close-time").value = data.company.close_time || "";
+        }
+      });
+      loadRoles();
     });
 
     function loadRoles() {
       fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         const list = document.getElementById("roles-list");
         if (!data.roles.length) { list.innerHTML = `<span style="color:var(--muted);font-size:0.85rem">No roles yet...</span>`; return; }
-        list.innerHTML = data.roles.map(r => `
-          <div class="role-tag">${r.name}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("");
+        list.innerHTML = data.roles.map(r => `<div class="role-tag">${r.name}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("");
       });
     }
-    loadRoles();
 
     function saveCompany() {
       const name = document.getElementById("company-name").value.trim();
@@ -89,7 +112,12 @@
       fetch(`${API}/company`, {
         method: "POST", headers: authHeaders(),
         body: JSON.stringify({ name, open_time: open, close_time: close })
-      }).then(() => { showToast("✅ Company info saved!"); localStorage.setItem("company", JSON.stringify({...JSON.parse(localStorage.getItem("company")||"{}"), name})); });
+      }).then(() => {
+        showToast("✅ Saved!");
+        localStorage.setItem("company", JSON.stringify({ ...getCompany(), name }));
+        document.getElementById("sidebar-company-name").textContent = name;
+        document.getElementById("sidebar-company-initial").textContent = name.charAt(0).toUpperCase();
+      });
     }
 
     function addRole() {

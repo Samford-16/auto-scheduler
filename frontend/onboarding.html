@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Started — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="onboarding-body">
+  <div class="bg-grid"></div>
+
+  <div class="onboarding-card">
+    <div class="onboarding-header">
+      <span class="onboarding-logo">A-Schedule</span>
+      <div class="progress-steps">
+        <div class="step active" id="step-1">
+          <div class="step-dot">1</div>
+          <span class="step-label">Hours</span>
+        </div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step" id="step-2">
+          <div class="step-dot">2</div>
+          <span class="step-label">Roles</span>
+        </div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step" id="step-3">
+          <div class="step-dot">3</div>
+          <span class="step-label">First Worker</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: Business Hours -->
+    <div id="panel-1" class="onboarding-body-content">
+      <div class="onboarding-title">When are you open? 🕐</div>
+      <p class="onboarding-desc">Set your operating hours so we can build schedules within your window.</p>
+      <div class="form-row">
+        <div class="form-group"><label>Opening Time</label><input type="time" id="open-time" value="09:00"></div>
+        <div class="form-group"><label>Closing Time</label><input type="time" id="close-time" value="17:00"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Roles -->
+    <div id="panel-2" class="onboarding-body-content" style="display:none">
+      <div class="onboarding-title">What roles do you have? 🎭</div>
+      <p class="onboarding-desc">Add the job positions at your business. You can always add more later.</p>
+      <div class="roles-list" id="roles-list"><span style="color:var(--muted);font-size:0.85rem">No roles yet...</span></div>
+      <div class="add-role-row">
+        <input type="text" id="role-input" placeholder="e.g. Cashier, Drive-thru, Barista..." onkeydown="if(event.key==='Enter') addRole()">
+        <button class="btn btn-primary" onclick="addRole()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Step 3: First Worker -->
+    <div id="panel-3" class="onboarding-body-content" style="display:none">
+      <div class="onboarding-title">Add your first worker 👤</div>
+      <p class="onboarding-desc">You can skip this and add workers later from the dashboard.</p>
+      <div class="form-group"><label>Full Name</label><input type="text" id="worker-name" placeholder="e.g. Jamie Smith"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Max Hours / Week</label><input type="number" id="worker-hours" placeholder="40" min="1" max="80"></div>
+        <div class="form-group"><label>Overtime Allowed</label><select id="worker-overtime"><option value="no">No</option><option value="yes">Yes</option></select></div>
+      </div>
+      <div class="form-group">
+        <label>Availability</label>
+        <div class="days-grid" style="margin-top:0.3rem">
+          <div class="day-btn" onclick="toggleDay(this,'Monday')">Mon</div>
+          <div class="day-btn" onclick="toggleDay(this,'Tuesday')">Tue</div>
+          <div class="day-btn" onclick="toggleDay(this,'Wednesday')">Wed</div>
+          <div class="day-btn" onclick="toggleDay(this,'Thursday')">Thu</div>
+          <div class="day-btn" onclick="toggleDay(this,'Friday')">Fri</div>
+          <div class="day-btn" onclick="toggleDay(this,'Saturday')">Sat</div>
+          <div class="day-btn" onclick="toggleDay(this,'Sunday')">Sun</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Roles</label>
+        <div class="roles-grid" id="worker-roles-grid" style="margin-top:0.3rem">
+          <span class="no-roles">Add roles in step 2 first</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboarding-footer">
+      <a class="skip-link" id="skip-btn" onclick="skipToEnd()">Skip setup →</a>
+      <div style="display:flex;gap:0.75rem">
+        <button class="btn btn-ghost" id="back-btn" style="display:none" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://34.28.196.192:5000";
+    if (!localStorage.getItem("token")) window.location.href = "login.html";
+
+    let currentStep = 1;
+    const totalSteps = 3;
+    const selectedDays = new Set();
+    const selectedRoles = new Set();
+    let savedRoles = [];
+
+    function authHeaders() {
+      return { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` };
+    }
+
+    function toggleDay(el, day) {
+      if (selectedDays.has(day)) { selectedDays.delete(day); el.classList.remove("selected"); }
+      else { selectedDays.add(day); el.classList.add("selected"); }
+    }
+
+    function toggleWorkerRole(el, id) {
+      if (selectedRoles.has(id)) { selectedRoles.delete(id); el.classList.remove("selected"); }
+      else { selectedRoles.add(id); el.classList.add("selected"); }
+    }
+
+    function updateStepUI() {
+      for (let i = 1; i <= totalSteps; i++) {
+        const step = document.getElementById(`step-${i}`);
+        step.className = "step";
+        if (i < currentStep) step.classList.add("done");
+        else if (i === currentStep) step.classList.add("active");
+
+        document.getElementById(`panel-${i}`).style.display = i === currentStep ? "block" : "none";
+        if (i < totalSteps) {
+          document.getElementById(`line-${i}`).className = i < currentStep ? "step-line done" : "step-line";
+        }
+      }
+
+      // Update step dots to show checkmark when done
+      for (let i = 1; i < currentStep; i++) {
+        document.querySelector(`#step-${i} .step-dot`).textContent = "✓";
+      }
+
+      document.getElementById("back-btn").style.display = currentStep > 1 ? "inline-flex" : "none";
+      document.getElementById("next-btn").textContent = currentStep === totalSteps ? "Finish →" : "Continue →";
+      document.getElementById("skip-btn").style.display = currentStep === totalSteps ? "none" : "inline";
+    }
+
+    async function nextStep() {
+      if (currentStep === 1) {
+        const open = document.getElementById("open-time").value;
+        const close = document.getElementById("close-time").value;
+        if (!open || !close) return alert("Please set your hours.");
+        const company = JSON.parse(localStorage.getItem("company") || "{}");
+        await fetch(`${API}/company`, {
+          method: "POST", headers: authHeaders(),
+          body: JSON.stringify({ name: company.name, open_time: open, close_time: close })
+        });
+        currentStep = 2;
+        updateStepUI();
+
+      } else if (currentStep === 2) {
+        // Load roles into worker step
+        const res = await fetch(`${API}/roles`, { headers: authHeaders() });
+        const data = await res.json();
+        savedRoles = data.roles || [];
+        const grid = document.getElementById("worker-roles-grid");
+        if (savedRoles.length) {
+          grid.innerHTML = savedRoles.map(r => `<div class="role-btn" onclick="toggleWorkerRole(this,${r.id})">${r.name}</div>`).join("");
+        } else {
+          grid.innerHTML = `<span class="no-roles">No roles added — that's okay!</span>`;
+        }
+        currentStep = 3;
+        updateStepUI();
+
+      } else if (currentStep === 3) {
+        // Add worker if name is filled in
+        const name = document.getElementById("worker-name").value.trim();
+        if (name) {
+          const hours = document.getElementById("worker-hours").value || 40;
+          const overtime = document.getElementById("worker-overtime").value;
+          await fetch(`${API}/add-worker`, {
+            method: "POST", headers: authHeaders(),
+            body: JSON.stringify({ name, max_hours: parseInt(hours), overtime, availability: [...selectedDays], roles: [...selectedRoles] })
+          });
+        }
+        window.location.href = "dashboard.html";
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) { currentStep--; updateStepUI(); }
+    }
+
+    function skipToEnd() { window.location.href = "dashboard.html"; }
+
+    function addRole() {
+      const input = document.getElementById("role-input");
+      const name = input.value.trim();
+      if (!name) return;
+      fetch(`${API}/roles`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ name }) })
+        .then(r => r.json()).then(data => {
+          if (data.status === "success") { input.value = ""; loadRoles(); }
+        });
+    }
+
+    function loadRoles() {
+      fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+        const list = document.getElementById("roles-list");
+        if (!data.roles.length) { list.innerHTML = `<span style="color:var(--muted);font-size:0.85rem">No roles yet...</span>`; return; }
+        list.innerHTML = data.roles.map(r => `<div class="role-tag">${r.name}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("");
+      });
+    }
+
+    function deleteRole(id) {
+      fetch(`${API}/roles/${id}`, { method: "DELETE", headers: authHeaders() }).then(() => loadRoles());
+    }
+
+    updateStepUI();
+    loadRoles();
+  </script>
+</body>
+</html>

@@ -24,7 +24,7 @@
       <input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
     </div>
 
-    <button class="btn btn-primary-lg" onclick="login()">Sign In</button>
+    <button class="btn btn-primary btn-full" onclick="login()">Sign In</button>
     <p class="footer-link">Don't have an account? <a href="signup.html">Sign up free</a></p>
   </div>
 
@@ -45,7 +45,7 @@
         if (data.status === "success") {
           localStorage.setItem("token", data.token);
           localStorage.setItem("company", JSON.stringify(data.company));
-          window.location.href = "index.html";
+          window.location.href = "dashboard.html";
         } else {
           err.textContent = data.message || "Login failed.";
           err.style.display = "block";
