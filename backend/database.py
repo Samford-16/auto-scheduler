@@ -11,7 +11,6 @@ def get_db():
 
 def init_db():
     conn = get_db()
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS companies (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +22,6 @@ def init_db():
         token TEXT
     )
     """)
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +30,6 @@ def init_db():
         FOREIGN KEY(company_id) REFERENCES companies(id)
     )
     """)
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS workers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +40,6 @@ def init_db():
         FOREIGN KEY(company_id) REFERENCES companies(id)
     )
     """)
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS worker_roles (
         worker_id INTEGER,
@@ -53,7 +49,6 @@ def init_db():
         PRIMARY KEY(worker_id, role_id)
     )
     """)
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS availability (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +57,6 @@ def init_db():
         FOREIGN KEY(worker_id) REFERENCES workers(id)
     )
     """)
-
     conn.execute("""
     CREATE TABLE IF NOT EXISTS schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,6 +71,15 @@ def init_db():
         FOREIGN KEY(role_id) REFERENCES roles(id)
     )
     """)
-
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        detail TEXT,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY(company_id) REFERENCES companies(id)
+    )
+    """)
     conn.commit()
     conn.close()
