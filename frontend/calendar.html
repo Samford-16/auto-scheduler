@@ -7,108 +7,137 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* ── Calendar layout ── */
-    .cal-nav {
+    /* ── Nav ── */
+    .cal-toolbar {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;
     }
-    .cal-nav-center { display: flex; align-items: center; gap: 0.75rem; }
-    .cal-week-label { font-size: 1rem; font-weight: 600; color: var(--text); min-width: 220px; text-align: center; }
-    .cal-nav-btn {
+    .cal-nav-left  { display: flex; align-items: center; gap: 0.5rem; }
+    .cal-nav-right { display: flex; align-items: center; gap: 0.5rem; }
+    .cal-period-label {
+      font-size: 1rem; font-weight: 600; color: var(--text);
+      min-width: 200px; text-align: center;
+    }
+    .cal-btn {
       background: var(--surface2); border: 1px solid var(--border); color: var(--text-secondary);
-      width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; font-size: 1rem;
-      transition: all 0.1s; font-family: inherit;
+      padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;
+      font-size: 0.82rem; font-family: inherit; font-weight: 500; transition: all 0.1s;
     }
-    .cal-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-text); }
-    .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .cal-today-btn {
-      background: var(--surface2); border: 1px solid var(--border); color: var(--text-secondary);
-      padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer;
-      font-size: 0.8rem; font-family: inherit; font-weight: 500; transition: all 0.1s;
+    .cal-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-text); }
+    .cal-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .cal-btn.icon-btn { padding: 0.4rem 0.6rem; font-size: 1rem; }
+    .view-toggle { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .view-btn {
+      background: transparent; border: none; color: var(--text-secondary);
+      padding: 0.4rem 0.85rem; font-size: 0.82rem; font-family: inherit;
+      font-weight: 500; cursor: pointer; transition: all 0.1s; border-right: 1px solid var(--border);
     }
-    .cal-today-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+    .view-btn:last-child { border-right: none; }
+    .view-btn.active { background: var(--accent); color: white; }
 
-    /* ── Grid ── */
-    .cal-grid {
-      display: grid;
-      grid-template-columns: 60px repeat(7, 1fr);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .cal-header-cell {
+    /* ── Shared grid styles ── */
+    .cal-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .cal-col-header {
       background: var(--surface2); border-bottom: 1px solid var(--border);
-      padding: 0.6rem 0.5rem; text-align: center;
+      padding: 0.55rem 0.5rem; text-align: center;
     }
-    .cal-header-cell.time-col { border-right: 1px solid var(--border); }
-    .cal-day-name { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 500; }
-    .cal-day-num  { font-size: 1rem; font-weight: 600; color: var(--text); margin-top: 0.15rem; }
-    .cal-day-num.today {
+    .day-name-sm  { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 500; }
+    .day-num-lg   { font-size: 1rem; font-weight: 600; color: var(--text); margin-top: 0.1rem; }
+    .day-num-lg.is-today {
       background: var(--accent); color: white;
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 26px; height: 26px; border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      margin-top: 0.15rem;
     }
 
-    /* ── All-day row ── */
-    .cal-allday-label {
-      background: var(--surface); border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border); padding: 0.4rem 0.5rem;
-      font-size: 0.65rem; color: var(--text-muted); text-align: right;
-      display: flex; align-items: center; justify-content: flex-end;
-    }
-    .cal-allday-cell {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border); padding: 0.3rem 0.25rem;
-      min-height: 36px;
-    }
-    .cal-allday-cell:last-child { border-right: none; }
-
-    /* ── Shift blocks ── */
+    /* ── Shift block ── */
     .shift-block {
-      border-radius: 5px; padding: 0.25rem 0.4rem; margin-bottom: 0.2rem;
-      font-size: 0.72rem; line-height: 1.3; cursor: pointer;
+      border-radius: 5px; padding: 0.25rem 0.45rem; margin-bottom: 0.2rem;
+      font-size: 0.72rem; line-height: 1.35; cursor: pointer;
       background: var(--accent-subtle); border-left: 3px solid var(--accent);
-      color: var(--accent-text); transition: opacity 0.15s;
-      position: relative;
+      color: var(--accent-text); transition: opacity 0.1s; position: relative;
     }
-    .shift-block:hover { opacity: 0.8; }
-    .shift-block .shift-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .shift-block .shift-time { opacity: 0.8; white-space: nowrap; }
-    .shift-block .shift-delete {
-      position: absolute; top: 2px; right: 3px;
-      font-size: 0.75rem; color: var(--text-muted); opacity: 0;
-      transition: opacity 0.1s; cursor: pointer; line-height: 1;
-      background: none; border: none; padding: 0; font-family: inherit;
+    .shift-block:hover { opacity: 0.75; }
+    .shift-block .s-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .shift-block .s-time { opacity: 0.75; }
+    .shift-block .s-del {
+      position: absolute; top: 2px; right: 3px; font-size: 0.8rem;
+      color: var(--text-muted); opacity: 0; transition: opacity 0.1s;
+      cursor: pointer; background: none; border: none; padding: 0; font-family: inherit;
     }
-    .shift-block:hover .shift-delete { opacity: 1; }
-    .shift-block .shift-delete:hover { color: #f87171; }
+    .shift-block:hover .s-del { opacity: 1; }
+    .shift-block .s-del:hover { color: #f87171; }
+    .empty-day { color: var(--text-muted); font-size: 0.75rem; opacity: 0.4; text-align: center; padding: 0.75rem 0; }
 
-    /* ── Empty cell ── */
-    .cal-empty { color: var(--text-muted); font-size: 0.75rem; padding: 0.5rem; text-align: center; opacity: 0.4; }
+    /* ── WEEK VIEW ── */
+    .week-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+    }
+    .week-cell {
+      border-right: 1px solid var(--border); padding: 0.4rem 0.3rem; min-height: 80px;
+    }
+    .week-cell:last-child { border-right: none; }
+
+    /* ── DAY VIEW ── */
+    .day-view { padding: 1.25rem; }
+    .day-view-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    .day-view-empty { color: var(--text-muted); font-size: 0.9rem; padding: 2rem; text-align: center; }
+    .day-shift-card {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent); border-radius: 8px;
+      padding: 0.75rem 1rem; margin-bottom: 0.6rem; cursor: pointer; transition: opacity 0.1s;
+    }
+    .day-shift-card:hover { opacity: 0.8; }
+    .day-shift-time { font-size: 0.82rem; color: var(--text-muted); min-width: 90px; }
+    .day-shift-worker { font-weight: 600; font-size: 0.9rem; }
+    .day-shift-role { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; }
+    .day-shift-del { margin-left: auto; }
+
+    /* ── MONTH VIEW ── */
+    .month-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+    }
+    .month-day-header {
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border); padding: 0.4rem;
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); text-align: center; font-weight: 500;
+    }
+    .month-day-header:last-child { border-right: none; }
+    .month-cell {
+      border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 0.35rem 0.3rem; min-height: 80px; vertical-align: top;
+    }
+    .month-cell:nth-child(7n) { border-right: none; }
+    .month-cell.other-month { opacity: 0.35; }
+    .month-cell.is-today { background: var(--accent-subtle); }
+    .month-date {
+      font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 0.3rem; text-align: right; padding-right: 0.2rem;
+    }
+    .month-date.is-today {
+      color: var(--accent-text); font-weight: 700;
+    }
+    .month-more {
+      font-size: 0.68rem; color: var(--text-muted); padding: 0.1rem 0.2rem; cursor: pointer;
+    }
+    .month-more:hover { color: var(--accent-text); }
 
     /* ── Range badge ── */
     .range-badge {
-      font-size: 0.75rem; color: var(--text-muted);
+      font-size: 0.72rem; color: var(--text-muted);
       background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 5px; padding: 0.25rem 0.6rem;
+      border-radius: 5px; padding: 0.25rem 0.6rem; white-space: nowrap;
     }
-
-    /* ── Legend ── */
-    .cal-legend { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
-    .legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); }
-    .legend-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); opacity: 0.7; }
 
     /* ── Modal ── */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 300; animation: fadeIn 0.15s ease;
+      display: flex; align-items: center; justify-content: center; z-index: 300;
     }
     .modal {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 340px;
+      border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 320px;
       animation: fadeUp 0.2s ease;
     }
     .modal-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -116,7 +145,6 @@
     .modal-row:last-of-type { border-bottom: none; }
     .modal-row strong { color: var(--text); }
     .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; justify-content: flex-end; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
@@ -143,190 +171,246 @@
 
     <main class="main-content">
       <div class="page-header">
-        <div>
-          <h1>Calendar</h1>
-          <p class="subtitle">Weekly view of your generated schedule.</p>
-        </div>
+        <div><h1>Calendar</h1><p class="subtitle">View your schedule by day, week, or month.</p></div>
         <a href="schedule.html" class="btn btn-primary">+ Build Schedule</a>
       </div>
 
-      <!-- Navigation -->
-      <div class="cal-nav">
-        <div class="cal-nav-center">
-          <button class="cal-nav-btn" id="btn-prev" onclick="changeWeek(-1)">‹</button>
-          <span class="cal-week-label" id="week-label">—</span>
-          <button class="cal-nav-btn" id="btn-next" onclick="changeWeek(1)">›</button>
-          <button class="cal-today-btn" onclick="goToToday()">Today</button>
+      <!-- Toolbar -->
+      <div class="cal-toolbar">
+        <div class="cal-nav-left">
+          <button class="cal-btn icon-btn" id="btn-prev" onclick="navigate(-1)">‹</button>
+          <span class="cal-period-label" id="period-label">—</span>
+          <button class="cal-btn icon-btn" id="btn-next" onclick="navigate(1)">›</button>
+          <button class="cal-btn" onclick="goToToday()">Today</button>
         </div>
-        <div class="range-badge" id="range-badge"></div>
+        <div class="cal-nav-right">
+          <span class="range-badge">3 mo back · 6 mo forward</span>
+          <div class="view-toggle">
+            <button class="view-btn active" id="vbtn-day"   onclick="setView('day')">Day</button>
+            <button class="view-btn"        id="vbtn-week"  onclick="setView('week')">Week</button>
+            <button class="view-btn"        id="vbtn-month" onclick="setView('month')">Month</button>
+          </div>
+        </div>
       </div>
 
-      <!-- Calendar grid -->
-      <div class="card" style="padding:0; overflow:hidden">
-        <div class="cal-grid" id="cal-grid">
-          <div style="padding:2rem;color:var(--text-muted);text-align:center;grid-column:1/-1">Loading...</div>
-        </div>
-        <div class="cal-legend" style="padding:0.75rem 1rem 1rem" id="cal-legend"></div>
+      <!-- Calendar output -->
+      <div class="card" style="padding:0;overflow:hidden" id="cal-card">
+        <div id="cal-output" style="padding:2rem;color:var(--text-muted);text-align:center">Loading...</div>
       </div>
     </main>
   </div>
 
-  <!-- Shift detail modal -->
-  <div class="modal-overlay" id="modal" style="display:none" onclick="closeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
       <div class="modal-title">Shift Details</div>
       <div id="modal-body"></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal').style.display='none'">Close</button>
-        <button class="btn btn-danger-soft" style="border:1px solid rgba(248,113,113,0.3)" id="modal-delete-btn">Remove Shift</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+        <button class="btn btn-danger-soft" style="border:1px solid rgba(248,113,113,0.3)" id="modal-del-btn">Remove</button>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
     initSidebar("calendar");
 
-    // ── Constants ──────────────────────────────────────
-    const DAYS_OF_WEEK = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-    const DAYS_SHORT   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    const MONTHS       = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const DAYS_FULL  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const DAYS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const MONTHS     = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-    // Range: 3 months back, 6 months forward
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const MIN_DATE = new Date(today); MIN_DATE.setMonth(MIN_DATE.getMonth() - 3);
-    const MAX_DATE = new Date(today); MAX_DATE.setMonth(MAX_DATE.getMonth() + 6);
+    const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+    const MIN_DATE  = new Date(todayDate); MIN_DATE.setMonth(MIN_DATE.getMonth() - 3);
+    const MAX_DATE  = new Date(todayDate); MAX_DATE.setMonth(MAX_DATE.getMonth() + 6);
 
-    // Current week start (Sunday)
-    let weekStart = getWeekStart(new Date());
+    let currentView = "week";
+    let cursor = new Date(todayDate); // day cursor
     let allSchedule = [];
 
-    function getWeekStart(date) {
-      const d = new Date(date);
-      d.setHours(0,0,0,0);
-      d.setDate(d.getDate() - d.getDay()); // back to Sunday
-      return d;
-    }
+    function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function addMonths(d, n) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x; }
+    function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+    function getWeekStart(d) { const x = new Date(d); x.setDate(x.getDate() - x.getDay()); return x; }
+    function getMonthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 
-    function addDays(date, n) {
-      const d = new Date(date);
-      d.setDate(d.getDate() + n);
-      return d;
-    }
+    function shiftsForDay(dayName) { return allSchedule.filter(s => s.day === dayName); }
+    function shiftsForDate(date)   { return shiftsForDay(DAYS_FULL[date.getDay()]); }
 
-    function fmtDate(date) {
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-
-    function fmtFull(date) {
-      return date.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" });
-    }
-
-    function showToast(msg, type = "success") {
+    function showToast(msg, type="success") {
       const t = document.getElementById("toast");
       t.textContent = msg; t.className = `toast ${type} show`;
       setTimeout(() => t.className = "toast", 3000);
     }
 
-    function changeWeek(dir) {
-      const next = addDays(weekStart, dir * 7);
-      const nextEnd = addDays(next, 6);
-      if (next < MIN_DATE && dir < 0) return;
-      if (nextEnd > MAX_DATE && dir > 0) return;
-      weekStart = next;
-      renderCalendar();
+    function setView(v) {
+      currentView = v;
+      ["day","week","month"].forEach(x => {
+        document.getElementById(`vbtn-${x}`).classList.toggle("active", x === v);
+      });
+      render();
     }
 
-    function goToToday() {
-      weekStart = getWeekStart(new Date());
-      renderCalendar();
+    function navigate(dir) {
+      if (currentView === "day")   cursor = addDays(cursor, dir);
+      if (currentView === "week")  cursor = addDays(cursor, dir * 7);
+      if (currentView === "month") cursor = addMonths(cursor, dir);
+      render();
     }
 
-    function updateNavButtons() {
-      const prevStart = addDays(weekStart, -7);
-      const nextEnd   = addDays(weekStart, 13);
-      document.getElementById("btn-prev").disabled = prevStart < MIN_DATE;
-      document.getElementById("btn-next").disabled = nextEnd   > MAX_DATE;
+    function goToToday() { cursor = new Date(todayDate); render(); }
 
-      // Range badge
-      const moBack  = Math.round((today - MIN_DATE) / (1000*60*60*24*30));
-      const moFwd   = Math.round((MAX_DATE - today) / (1000*60*60*24*30));
-      document.getElementById("range-badge").textContent = `±${moBack}mo back · ${moFwd}mo forward`;
-    }
-
-    function renderCalendar() {
-      updateNavButtons();
-      const weekEnd = addDays(weekStart, 6);
-
-      // Week label
-      if (weekStart.getMonth() === weekEnd.getMonth()) {
-        document.getElementById("week-label").textContent =
-          `${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()}–${weekEnd.getDate()}, ${weekStart.getFullYear()}`;
+    function updateNav() {
+      let prevOk, nextOk;
+      if (currentView === "day") {
+        prevOk = addDays(cursor, -1) >= MIN_DATE;
+        nextOk = addDays(cursor,  1) <= MAX_DATE;
+      } else if (currentView === "week") {
+        prevOk = addDays(getWeekStart(cursor), -1) >= MIN_DATE;
+        nextOk = addDays(getWeekStart(cursor), 7)  <= MAX_DATE;
       } else {
-        document.getElementById("week-label").textContent =
-          `${fmtDate(weekStart)} – ${fmtDate(weekEnd)}, ${weekStart.getFullYear()}`;
+        prevOk = addMonths(cursor, -1) >= MIN_DATE;
+        nextOk = addMonths(cursor,  1) <= MAX_DATE;
+      }
+      document.getElementById("btn-prev").disabled = !prevOk;
+      document.getElementById("btn-next").disabled = !nextOk;
+    }
+
+    function shiftBlock(s, compact=false) {
+      return `<div class="shift-block" onclick="openModal(${s.id})">
+        <button class="s-del" onclick="event.stopPropagation();deleteShift(${s.id})">×</button>
+        <div class="s-name">${s.worker}</div>
+        ${!compact ? `<div class="s-time">${s.start_time}–${s.end_time}</div>` : ''}
+        ${s.role && !compact ? `<div class="s-time">${s.role}</div>` : ''}
+      </div>`;
+    }
+
+    function render() {
+      updateNav();
+      const out = document.getElementById("cal-output");
+
+      if (currentView === "day") renderDay(out);
+      else if (currentView === "week") renderWeek(out);
+      else renderMonth(out);
+    }
+
+    // ── DAY VIEW ──────────────────────────────────────
+    function renderDay(out) {
+      const dayName = DAYS_FULL[cursor.getDay()];
+      const shifts  = shiftsForDate(cursor);
+      const isToday = sameDay(cursor, todayDate);
+
+      document.getElementById("period-label").textContent =
+        cursor.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" });
+
+      let html = `<div class="day-view">`;
+      html += `<div class="day-view-header">${isToday ? "Today — " : ""}${dayName}</div>`;
+
+      if (!shifts.length) {
+        html += `<div class="day-view-empty">No shifts scheduled for this day.<br><a href="schedule.html" style="color:var(--accent-text);text-decoration:none;font-size:0.85rem">Build a schedule →</a></div>`;
+      } else {
+        const sorted = [...shifts].sort((a,b) => a.start_time.localeCompare(b.start_time));
+        sorted.forEach(s => {
+          html += `<div class="day-shift-card" onclick="openModal(${s.id})">
+            <div class="day-shift-time">${s.start_time} – ${s.end_time}</div>
+            <div><div class="day-shift-worker">${s.worker}</div><div class="day-shift-role">${s.role || 'No role'}</div></div>
+            <div class="day-shift-del"><button class="btn btn-danger-soft" style="border:1px solid rgba(248,113,113,0.25)" onclick="event.stopPropagation();deleteShift(${s.id})">Remove</button></div>
+          </div>`;
+        });
+      }
+      html += `</div>`;
+      out.innerHTML = html;
+    }
+
+    // ── WEEK VIEW ─────────────────────────────────────
+    function renderWeek(out) {
+      const ws = getWeekStart(cursor);
+      const we = addDays(ws, 6);
+      const weekDays = Array.from({length:7}, (_,i) => addDays(ws, i));
+
+      if (ws.getMonth() === we.getMonth()) {
+        document.getElementById("period-label").textContent =
+          `${MONTHS[ws.getMonth()]} ${ws.getDate()}–${we.getDate()}, ${ws.getFullYear()}`;
+      } else {
+        document.getElementById("period-label").textContent =
+          `${ws.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${we.toLocaleDateString("en-US",{month:"short",day:"numeric"})}, ${ws.getFullYear()}`;
       }
 
-      // Build day columns for this week (Sun-Sat)
-      const weekDays = Array.from({length:7}, (_, i) => addDays(weekStart, i));
+      let html = `<div class="cal-wrap"><div class="week-grid">`;
 
-      // Group schedule by day-of-week name
-      const byDay = {};
-      DAYS_OF_WEEK.forEach(d => byDay[d] = []);
-      allSchedule.forEach(s => { if (byDay[s.day]) byDay[s.day].push(s); });
-
-      // Build grid HTML
-      let html = "";
-
-      // Header row
-      html += `<div class="cal-header-cell time-col"></div>`;
+      // Headers
       weekDays.forEach(d => {
-        const isToday = d.toDateString() === today.toDateString();
-        const dayName = DAYS_OF_WEEK[d.getDay()];
-        const hasShifts = byDay[dayName].length > 0;
-        html += `<div class="cal-header-cell" style="border-right:1px solid var(--border)">
-          <div class="cal-day-name">${DAYS_SHORT[d.getDay()]}</div>
-          <div class="cal-day-num${isToday ? ' today' : ''}">${d.getDate()}</div>
-          ${hasShifts ? `<div style="font-size:0.65rem;color:var(--accent-text);margin-top:0.15rem">${byDay[dayName].length} shift${byDay[dayName].length>1?'s':''}</div>` : ''}
+        const isToday = sameDay(d, todayDate);
+        const cnt = shiftsForDate(d).length;
+        html += `<div class="cal-col-header" style="border-right:1px solid var(--border)">
+          <div class="day-name-sm">${DAYS_SHORT[d.getDay()]}</div>
+          <div class="day-num-lg${isToday?' is-today':''}">${d.getDate()}</div>
+          ${cnt ? `<div style="font-size:0.65rem;color:var(--accent-text);margin-top:0.1rem">${cnt} shift${cnt>1?'s':''}</div>` : ''}
         </div>`;
       });
 
-      // Shifts row
-      html += `<div class="cal-allday-label">Shifts</div>`;
+      // Cells
       weekDays.forEach(d => {
-        const dayName = DAYS_OF_WEEK[d.getDay()];
-        const shifts = byDay[dayName];
-        html += `<div class="cal-allday-cell">`;
-        if (shifts.length) {
-          shifts.forEach(s => {
-            html += `<div class="shift-block" onclick="openModal(${s.id})">
-              <button class="shift-delete" onclick="event.stopPropagation(); deleteShift(${s.id})" title="Remove">×</button>
-              <div class="shift-name">${s.worker}</div>
-              <div class="shift-time">${s.start_time}–${s.end_time}</div>
-              ${s.role ? `<div class="shift-time">${s.role}</div>` : ''}
-            </div>`;
-          });
-        } else {
-          html += `<div class="cal-empty">—</div>`;
-        }
+        const shifts = [...shiftsForDate(d)].sort((a,b) => a.start_time.localeCompare(b.start_time));
+        html += `<div class="week-cell">`;
+        if (shifts.length) shifts.forEach(s => html += shiftBlock(s));
+        else html += `<div class="empty-day">—</div>`;
         html += `</div>`;
       });
 
-      document.getElementById("cal-grid").innerHTML = html;
-
-      // Legend — unique workers
-      const workers = [...new Set(allSchedule.map(s => s.worker))];
-      document.getElementById("cal-legend").innerHTML = workers.length
-        ? workers.map(w => `<div class="legend-item"><div class="legend-dot"></div>${w}</div>`).join("")
-        : "";
+      html += `</div></div>`;
+      out.innerHTML = html;
     }
 
-    function openModal(shiftId) {
-      const s = allSchedule.find(x => x.id === shiftId);
+    // ── MONTH VIEW ────────────────────────────────────
+    function renderMonth(out) {
+      const ms = getMonthStart(cursor);
+      const me = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0); // last day
+
+      document.getElementById("period-label").textContent =
+        `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
+
+      // Grid starts from Sunday of the first week
+      const gridStart = getWeekStart(ms);
+      // Grid ends Saturday of the last week
+      const gridEnd   = addDays(getWeekStart(me), 6);
+
+      let html = `<div class="cal-wrap"><div class="month-grid">`;
+
+      // Day name headers
+      DAYS_SHORT.forEach(d => html += `<div class="month-day-header">${d}</div>`);
+
+      // Day cells
+      let d = new Date(gridStart);
+      while (d <= gridEnd) {
+        const isCurrentMonth = d.getMonth() === cursor.getMonth();
+        const isToday = sameDay(d, todayDate);
+        const dayName = DAYS_FULL[d.getDay()];
+        const shifts  = shiftsForDay(dayName);
+        const maxShow = 2;
+
+        html += `<div class="month-cell${!isCurrentMonth?' other-month':''}${isToday?' is-today':''}">`;
+        html += `<div class="month-date${isToday?' is-today':''}">${d.getDate()}</div>`;
+
+        if (shifts.length) {
+          shifts.slice(0, maxShow).forEach(s => html += shiftBlock(s, true));
+          if (shifts.length > maxShow) {
+            html += `<div class="month-more" onclick="cursor=new Date(${d.getTime()});setView('day')">+${shifts.length - maxShow} more</div>`;
+          }
+        }
+        html += `</div>`;
+        d = addDays(d, 1);
+      }
+
+      html += `</div></div>`;
+      out.innerHTML = html;
+    }
+
+    // ── Modal ─────────────────────────────────────────
+    function openModal(id) {
+      const s = allSchedule.find(x => x.id === id);
       if (!s) return;
       document.getElementById("modal-body").innerHTML = `
         <div class="modal-row"><span>Worker</span><strong>${s.worker}</strong></div>
@@ -334,32 +418,28 @@
         <div class="modal-row"><span>Start</span><strong>${s.start_time}</strong></div>
         <div class="modal-row"><span>End</span><strong>${s.end_time}</strong></div>
         <div class="modal-row"><span>Role</span><strong>${s.role || '—'}</strong></div>`;
-      document.getElementById("modal-delete-btn").onclick = () => deleteShift(shiftId, true);
+      document.getElementById("modal-del-btn").onclick = () => deleteShift(id, true);
       document.getElementById("modal").style.display = "flex";
     }
 
-    function closeModal(e) {
-      document.getElementById("modal").style.display = "none";
-    }
+    function closeModal() { document.getElementById("modal").style.display = "none"; }
 
-    function deleteShift(id, fromModal = false) {
-      fetch(`${API}/schedule/${id}`, { method: "DELETE", headers: authHeaders() })
+    function deleteShift(id, fromModal=false) {
+      fetch(`${API}/schedule/${id}`, { method:"DELETE", headers: authHeaders() })
         .then(r => r.json()).then(data => {
           if (data.status === "success") {
             showToast("Shift removed");
-            if (fromModal) document.getElementById("modal").style.display = "none";
+            if (fromModal) closeModal();
             allSchedule = allSchedule.filter(s => s.id !== id);
-            renderCalendar();
-          } else {
-            showToast("Failed to remove shift", "error");
-          }
+            render();
+          } else showToast("Failed to remove shift", "error");
         });
     }
 
-    // ── Initial load ──────────────────────────────────
+    // ── Load ──────────────────────────────────────────
     fetch(`${API}/schedule`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       allSchedule = data.schedule || [];
-      renderCalendar();
+      render();
     });
   </script>
 </body>
