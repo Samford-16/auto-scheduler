@@ -7,166 +7,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --border: #2a2a3a;
-      --accent: #6c63ff;
-      --accent2: #ff6584;
-      --text: #f0f0f8;
-      --muted: #7a7a9a;
+      --bg: #0a0a0f; --surface: #13131a; --border: #2a2a3a;
+      --accent: #6c63ff; --accent2: #ff6584; --text: #f0f0f8; --muted: #7a7a9a;
     }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-    }
-
-    .glow {
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
-      top: -200px;
-      left: -200px;
-      pointer-events: none;
-    }
-
-    .glow2 {
-      position: fixed;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255,101,132,0.1) 0%, transparent 70%);
-      bottom: -100px;
-      right: -100px;
-      pointer-events: none;
-    }
-
-    .hero {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      padding: 2rem;
-      animation: fadeUp 0.8s ease both;
-    }
-
-    .logo {
-      font-family: 'Syne', sans-serif;
-      font-size: 4rem;
-      font-weight: 800;
-      letter-spacing: -2px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 0.5rem;
-    }
-
-    .tagline {
-      font-size: 1.1rem;
-      color: var(--muted);
-      font-weight: 300;
-      margin-bottom: 3rem;
-      letter-spacing: 0.5px;
-    }
-
-    .company-badge {
-      display: none;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 0.5rem 1.2rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 2rem;
-      animation: fadeUp 0.6s ease both;
-    }
-
-    .company-badge span {
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.9rem 2rem;
-      border-radius: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #8b7fff);
-      color: white;
-      box-shadow: 0 4px 24px rgba(108,99,255,0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(108,99,255,0.4);
-    }
-
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      transform: translateY(-2px);
-    }
-
-    .setup-notice {
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .setup-notice a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+    .glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%); top: -200px; left: -200px; pointer-events: none; }
+    .glow2 { position: fixed; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(255,101,132,0.1) 0%, transparent 70%); bottom: -100px; right: -100px; pointer-events: none; }
+    .hero { position: relative; z-index: 1; text-align: center; padding: 2rem; animation: fadeUp 0.8s ease both; }
+    .logo { font-family: 'Syne', sans-serif; font-size: 4rem; font-weight: 800; letter-spacing: -2px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; }
+    .tagline { font-size: 1.1rem; color: var(--muted); font-weight: 300; margin-bottom: 3rem; }
+    .company-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 0.5rem 1.2rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 2rem; display: none; }
+    .company-badge span { color: var(--accent); font-weight: 500; }
+    .btn-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.9rem 2rem; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; text-decoration: none; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #8b7fff); color: white; box-shadow: 0 4px 24px rgba(108,99,255,0.3); }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
@@ -178,39 +40,58 @@
     <div class="logo">A-Schedule</div>
     <p class="tagline">Intelligent shift scheduling for modern teams</p>
 
+    <!-- Shown when logged in -->
     <div class="company-badge" id="company-badge">
-      Logged in as <span id="company-name-display">—</span>
+      Welcome back, <span id="company-name-display">—</span>
     </div>
 
-    <div class="btn-group">
-      <a href="dashboard.html" class="btn btn-primary">
-        ⚡ Open Dashboard
-      </a>
-      <a href="setup.html" class="btn btn-secondary">
-        ⚙️ Company Setup
-      </a>
+    <!-- Logged out buttons -->
+    <div class="btn-group" id="logged-out-btns">
+      <a href="login.html" class="btn btn-primary">⚡ Sign In</a>
+      <a href="signup.html" class="btn btn-secondary">✨ Create Account</a>
     </div>
 
-    <p class="setup-notice" id="setup-notice" style="display:none">
-      First time? <a href="setup.html">Set up your company</a> to get started.
-    </p>
+    <!-- Logged in buttons -->
+    <div class="btn-group" id="logged-in-btns" style="display:none">
+      <a href="dashboard.html" class="btn btn-primary">⚡ Dashboard</a>
+      <a href="setup.html" class="btn btn-secondary">⚙️ Setup</a>
+      <button class="btn btn-ghost" onclick="logout()">Sign Out</button>
+    </div>
   </div>
 
   <script>
     const API = "http://34.28.196.192:5000";
-    fetch(`${API}/company`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.company) {
-          document.getElementById("company-badge").style.display = "inline-flex";
-          document.getElementById("company-name-display").textContent = data.company.name;
-        } else {
-          document.getElementById("setup-notice").style.display = "block";
-        }
-      }).catch(() => {});
+    const token = localStorage.getItem("token");
+    const company = localStorage.getItem("company") ? JSON.parse(localStorage.getItem("company")) : null;
+
+    if (token && company) {
+      document.getElementById("logged-out-btns").style.display = "none";
+      document.getElementById("logged-in-btns").style.display = "flex";
+      document.getElementById("company-badge").style.display = "inline-flex";
+      document.getElementById("company-name-display").textContent = company.name;
+    }
+
+    function logout() {
+      fetch(`${API}/logout`, { method: "POST", headers: { "Authorization": `Bearer ${token}` } })
+        .finally(() => { localStorage.clear(); window.location.reload(); });
+    }
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
