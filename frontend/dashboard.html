@@ -3,41 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — A-Schedule</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <title>Workers — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="app-layout">
-
-    <!-- Sidebar -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">A-Schedule</a>
       <nav class="sidebar-nav">
         <span class="sidebar-section">Workspace</span>
-        <a href="dashboard.html" class="nav-item active" data-page="dashboard">
-          <span class="icon">👥</span> Workers
-        </a>
-        <a href="schedule.html" class="nav-item" data-page="schedule">
-          <span class="icon">📅</span> Schedule
-        </a>
-        <a href="setup.html" class="nav-item" data-page="setup">
-          <span class="icon">⚙️</span> Setup
-        </a>
-        
+        <a href="dashboard.html" class="nav-item active" data-page="dashboard"><span class="icon">👥</span> Workers</a>
+        <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <span class="sidebar-section">Account</span>
+        <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
+        <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-company">
           <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
           <span class="sidebar-company-name" id="sidebar-company-name">—</span>
         </div>
-        <button class="nav-item" onclick="logout()" style="color:var(--danger)">
-          <span class="icon">🚪</span> Sign Out
-        </button>
+        <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="main-content">
       <div class="page-header">
         <div>
@@ -65,9 +55,7 @@
       </div>
     </main>
   </div>
-
   <div class="toast" id="toast"></div>
-
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
@@ -91,9 +79,9 @@
             <td><strong>${w.name}</strong></td>
             <td>${w.max_hours} hrs/wk</td>
             <td><span class="badge ${w.overtime === 'yes' ? 'badge-yes' : 'badge-no'}">${w.overtime === 'yes' ? 'Yes' : 'No'}</span></td>
-            <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--muted)">—</span>'}</td>
-            <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--muted)">—</span>'}</td>
-            <td><button class="btn btn-danger" onclick="deleteWorker(${w.id}, '${w.name}')">Delete</button></td>
+            <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td><button class="btn btn-danger-soft" onclick="deleteWorker(${w.id}, '${w.name}')">Remove</button></td>
           </tr>`).join("");
         document.getElementById("workers-container").innerHTML = `
           <table><thead><tr><th>Name</th><th>Max Hours</th><th>Overtime</th><th>Roles</th><th>Availability</th><th></th></tr></thead>

@@ -4,31 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A-Schedule</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="landing-body">
-  <div class="bg-grid"></div>
-  <div class="glow"></div>
-  <div class="glow2"></div>
+<body>
+  <div class="landing-body">
+    <div class="hero">
+      <div class="hero-logo">A<span>-</span>Schedule</div>
+      <p class="hero-tagline">Intelligent shift scheduling for modern teams. Build schedules in minutes, not hours.</p>
 
-  <div class="hero">
-    <div class="hero-logo">A-Schedule</div>
-    <p class="hero-tagline">Intelligent shift scheduling for modern teams</p>
+      <div class="company-badge" id="company-badge">
+        Welcome back, <span id="company-name-display">—</span>
+      </div>
 
-    <div class="company-badge" id="company-badge">
-      Welcome back, <span id="company-name-display">—</span>
-    </div>
+      <div class="btn-group" id="logged-out-btns">
+        <a href="login.html" class="btn btn-primary" style="padding:0.65rem 1.5rem;font-size:0.9rem">Sign In</a>
+        <a href="signup.html" class="btn btn-secondary" style="padding:0.65rem 1.5rem;font-size:0.9rem">Create Account</a>
+      </div>
 
-    <div class="btn-group" id="logged-out-btns">
-      <a href="login.html" class="btn-hero-primary">⚡ Sign In</a>
-      <a href="signup.html" class="btn-hero-secondary">✨ Create Account</a>
-    </div>
-
-    <div class="btn-group" id="logged-in-btns" style="display:none">
-      <a href="dashboard.html" class="btn-hero-primary">⚡ Dashboard</a>
-      <a href="setup.html" class="btn-hero-secondary">⚙️ Setup</a>
-      <button class="btn-hero-ghost" onclick="logout()">Sign Out</button>
+      <div class="btn-group" id="logged-in-btns" style="display:none">
+        <a href="dashboard.html" class="btn btn-primary" style="padding:0.65rem 1.5rem;font-size:0.9rem">Go to Dashboard</a>
+        <button class="btn btn-ghost" style="padding:0.65rem 1.5rem;font-size:0.9rem" onclick="logoutLanding()">Sign Out</button>
+      </div>
     </div>
   </div>
 
@@ -37,6 +34,11 @@
     const token = localStorage.getItem("token");
     const company = localStorage.getItem("company") ? JSON.parse(localStorage.getItem("company")) : null;
 
+    // Apply theme
+    const theme = localStorage.getItem("theme") || "dark";
+    const accent = localStorage.getItem("accent") || "emerald";
+    document.body.classList.add(`theme-${theme}`, `accent-${accent}`);
+
     if (token && company) {
       document.getElementById("logged-out-btns").style.display = "none";
       document.getElementById("logged-in-btns").style.display = "flex";
@@ -44,9 +46,9 @@
       document.getElementById("company-name-display").textContent = company.name;
     }
 
-    function logout() {
+    function logoutLanding() {
       fetch(`${API}/logout`, { method: "POST", headers: { "Authorization": `Bearer ${token}` } })
-        .finally(() => { localStorage.clear(); window.location.reload(); });
+        .finally(() => { localStorage.removeItem("token"); localStorage.removeItem("company"); window.location.reload(); });
     }
   </script>
 </body>

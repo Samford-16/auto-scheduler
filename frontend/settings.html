@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">A-Schedule</a>
+      <nav class="sidebar-nav">
+        <span class="sidebar-section">Workspace</span>
+        <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
+        <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <span class="sidebar-section">Account</span>
+        <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
+        <a href="settings.html" class="nav-item active" data-page="settings"><span class="icon">🎨</span> Settings</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-company">
+          <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
+          <span class="sidebar-company-name" id="sidebar-company-name">—</span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1>Settings</h1>
+          <p class="subtitle">Customize your A-Schedule appearance.</p>
+        </div>
+      </div>
+
+      <div style="max-width:520px">
+        <div class="card">
+          <div class="settings-section">
+            <div class="settings-label">Theme</div>
+            <div class="theme-toggle">
+              <button class="theme-btn" id="btn-dark" onclick="setTheme('dark')">
+                🌙 Dark
+              </button>
+              <button class="theme-btn" id="btn-light" onclick="setTheme('light')">
+                ☀️ Light
+              </button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="settings-section" style="margin-bottom:0">
+            <div class="settings-label">Accent Color</div>
+            <div class="color-swatches">
+              <div class="swatch" id="swatch-emerald" style="background:#10b981" onclick="setAccent('emerald')" title="Emerald"></div>
+              <div class="swatch" id="swatch-blue"    style="background:#3b82f6" onclick="setAccent('blue')"    title="Blue"></div>
+              <div class="swatch" id="swatch-violet"  style="background:#8b5cf6" onclick="setAccent('violet')"  title="Violet"></div>
+              <div class="swatch" id="swatch-rose"    style="background:#f43f5e" onclick="setAccent('rose')"    title="Rose"></div>
+              <div class="swatch" id="swatch-amber"   style="background:#f59e0b" onclick="setAccent('amber')"   title="Amber"></div>
+              <div class="swatch" id="swatch-slate"   style="background:#64748b" onclick="setAccent('slate')"   title="Slate"></div>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.78rem;margin-top:0.75rem">
+              Changes apply instantly across the whole app.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    if (!getToken()) window.location.href = "login.html";
+    initSidebar("settings");
+
+    function setTheme(theme) {
+      localStorage.setItem("theme", theme);
+      applyTheme();
+      updateUI();
+    }
+
+    function setAccent(accent) {
+      localStorage.setItem("accent", accent);
+      applyTheme();
+      updateUI();
+    }
+
+    function updateUI() {
+      const theme  = localStorage.getItem("theme")  || "dark";
+      const accent = localStorage.getItem("accent") || "emerald";
+
+      document.getElementById("btn-dark").classList.toggle("active", theme === "dark");
+      document.getElementById("btn-light").classList.toggle("active", theme === "light");
+
+      const accents = ["emerald","blue","violet","rose","amber","slate"];
+      accents.forEach(a => {
+        const el = document.getElementById(`swatch-${a}`);
+        if (el) el.classList.toggle("active", a === accent);
+      });
+    }
+
+    updateUI();
+  </script>
+</body>
+</html>

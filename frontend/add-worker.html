@@ -4,35 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Worker — A-Schedule</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="app-layout">
-
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">A-Schedule</a>
       <nav class="sidebar-nav">
         <span class="sidebar-section">Workspace</span>
-        <a href="dashboard.html" class="nav-item" data-page="dashboard">
-          <span class="icon">👥</span> Workers
-        </a>
-        <a href="schedule.html" class="nav-item" data-page="schedule">
-          <span class="icon">📅</span> Schedule
-        </a>
-        <a href="setup.html" class="nav-item" data-page="setup">
-          <span class="icon">⚙️</span> Setup
-        </a>
-        
+        <a href="dashboard.html" class="nav-item active" data-page="dashboard"><span class="icon">👥</span> Workers</a>
+        <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <span class="sidebar-section">Account</span>
+        <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
+        <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-company">
           <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
           <span class="sidebar-company-name" id="sidebar-company-name">—</span>
         </div>
-        <button class="nav-item" onclick="logout()" style="color:var(--danger)">
-          <span class="icon">🚪</span> Sign Out
-        </button>
+        <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
       </div>
     </aside>
 
@@ -40,14 +32,15 @@
       <div class="page-header">
         <div>
           <h1>Add Worker</h1>
-          <p class="subtitle">Enter the employee's details, availability, and roles.</p>
+          <p class="subtitle">Enter the employee's details, availability, and assigned roles.</p>
         </div>
+        <a href="dashboard.html" class="btn btn-ghost">← Back</a>
       </div>
 
-      <div style="max-width:640px">
+      <div style="max-width:600px">
         <div class="card">
-          <div class="card-title-lg">👤 Basic Info</div>
-          <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="e.g. Jamie Smith"></div>
+          <div class="card-title-lg">Basic Info</div>
+          <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="e.g. Jamie Smith" autofocus></div>
           <div class="form-row">
             <div class="form-group"><label>Max Hours / Week</label><input type="number" id="hours" placeholder="40" min="1" max="80"></div>
             <div class="form-group"><label>Overtime Allowed</label><select id="overtime"><option value="no">No</option><option value="yes">Yes</option></select></div>
@@ -55,7 +48,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title-lg">📅 Availability</div>
+          <div class="card-title-lg">Availability</div>
           <div class="days-grid">
             <div class="day-btn" onclick="toggleDay(this,'Monday')">Mon</div>
             <div class="day-btn" onclick="toggleDay(this,'Tuesday')">Tue</div>
@@ -68,13 +61,11 @@
         </div>
 
         <div class="card">
-          <div class="card-title-lg">🎭 Roles</div>
-          <div class="roles-grid" id="roles-grid">
-            <span class="no-roles">Loading...</span>
-          </div>
+          <div class="card-title-lg">Roles</div>
+          <div class="roles-grid" id="roles-grid"><span class="no-roles">Loading...</span></div>
         </div>
 
-        <button class="btn btn-primary btn-full" onclick="addWorker()">✅ Add Worker</button>
+        <button class="btn btn-primary btn-full" onclick="addWorker()">Add Worker</button>
       </div>
     </main>
   </div>
@@ -82,7 +73,7 @@
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
-    initSidebar("add-worker");
+    initSidebar("dashboard");
 
     const selectedDays = new Set();
     const selectedRoles = new Set();
@@ -91,7 +82,6 @@
       if (selectedDays.has(day)) { selectedDays.delete(day); el.classList.remove("selected"); }
       else { selectedDays.add(day); el.classList.add("selected"); }
     }
-
     function toggleRole(el, id) {
       if (selectedRoles.has(id)) { selectedRoles.delete(id); el.classList.remove("selected"); }
       else { selectedRoles.add(id); el.classList.add("selected"); }
@@ -99,11 +89,9 @@
 
     fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       const grid = document.getElementById("roles-grid");
-      if (!data.roles || !data.roles.length) {
-        grid.innerHTML = `<span class="no-roles">No roles set up yet. <a href="setup.html">Add roles in Setup →</a></span>`;
-        return;
-      }
-      grid.innerHTML = data.roles.map(r => `<div class="role-btn" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("");
+      grid.innerHTML = data.roles && data.roles.length
+        ? data.roles.map(r => `<div class="role-btn" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("")
+        : `<span class="no-roles">No roles yet. <a href="setup.html">Add roles in Setup →</a></span>`;
     });
 
     function addWorker() {
