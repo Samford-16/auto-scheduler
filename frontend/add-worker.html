@@ -5,53 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Worker — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
-      --border: #2a2a3a; --accent: #6c63ff; --accent2: #ff6584;
-      --text: #f0f0f8; --muted: #7a7a9a; --danger: #f87171;
-    }
-    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-    nav { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; }
-    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; margin-left: 1rem; }
-    .nav-links a:hover { color: var(--text); }
-    .container { max-width: 620px; margin: 0 auto; padding: 3rem 2rem; }
-    h1 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem; }
-    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2.5rem; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; }
-    .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; margin-bottom: 1.5rem; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.2rem; }
-    label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-    input, select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 0.75rem 1rem; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; transition: border-color 0.2s; }
-    input:focus, select:focus { outline: none; border-color: var(--accent); }
-    .days-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-    .day-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 0.6rem; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; user-select: none; }
-    .day-btn.selected { background: rgba(108,99,255,0.2); border-color: var(--accent); color: var(--accent); font-weight: 500; }
-    .roles-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .role-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 0.5rem 1rem; border-radius: 100px; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; }
-    .role-btn.selected { background: rgba(108,99,255,0.2); border-color: var(--accent); color: var(--accent); }
-    .no-roles { color: var(--muted); font-size: 0.85rem; }
-    .no-roles a { color: var(--accent); }
-    .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 2rem; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), #8b7fff); color: white; box-shadow: 0 4px 16px rgba(108,99,255,0.3); width: 100%; justify-content: center; }
-    .btn-primary:hover { transform: translateY(-1px); }
-  </style>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <nav>
     <a href="index.html" class="nav-logo">A-Schedule</a>
-    <div class="nav-links"><a href="dashboard.html">← Back to Dashboard</a></div>
+    <div class="nav-links">
+      <a href="dashboard.html">← Back to Dashboard</a>
+    </div>
   </nav>
 
-  <div class="container">
+  <div class="container-xs">
     <h1>Add Worker</h1>
-    <p class="subtitle">Enter the employee's details, availability, and roles.</p>
+    <p class="subtitle-lg">Enter the employee's details, availability, and roles.</p>
 
     <div class="card">
-      <div class="card-title">👤 Basic Info</div>
+      <div class="card-title-lg">👤 Basic Info</div>
       <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="e.g. Jamie Smith"></div>
       <div class="form-row">
         <div class="form-group"><label>Max Hours / Week</label><input type="number" id="hours" placeholder="40" min="1" max="80"></div>
@@ -60,7 +29,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📅 Availability</div>
+      <div class="card-title-lg">📅 Availability</div>
       <div class="days-grid">
         <div class="day-btn" onclick="toggleDay(this,'Monday')">Mon</div>
         <div class="day-btn" onclick="toggleDay(this,'Tuesday')">Tue</div>
@@ -73,13 +42,13 @@
     </div>
 
     <div class="card">
-      <div class="card-title">🎭 Roles</div>
+      <div class="card-title-lg">🎭 Roles</div>
       <div class="roles-grid" id="roles-grid">
         <span class="no-roles">Loading roles... <a href="setup.html">Add roles in Setup</a></span>
       </div>
     </div>
 
-    <button class="btn btn-primary" onclick="addWorker()">✅ Add Worker</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.9rem" onclick="addWorker()">✅ Add Worker</button>
   </div>
 
   <script src="js/auth.js"></script>
@@ -115,8 +84,7 @@
       if (!name || !hours) return alert("Please enter name and max hours.");
       if (!selectedDays.size) return alert("Please select at least one available day.");
       fetch(`${API}/add-worker`, {
-        method: "POST",
-        headers: authHeaders(),
+        method: "POST", headers: authHeaders(),
         body: JSON.stringify({ name, max_hours: parseInt(hours), overtime, availability: [...selectedDays], roles: [...selectedRoles] })
       }).then(() => window.location.href = "dashboard.html");
     }
