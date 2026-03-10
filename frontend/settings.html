@@ -6,6 +6,39 @@
   <title>Settings — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .hue-slider-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    .hue-track {
+      width: 100%; height: 14px; border-radius: 100px;
+      background: linear-gradient(to right,
+        hsl(0,70%,55%), hsl(30,70%,55%), hsl(60,70%,55%),
+        hsl(90,70%,55%), hsl(120,70%,55%), hsl(150,70%,55%),
+        hsl(180,70%,55%), hsl(210,70%,55%), hsl(240,70%,55%),
+        hsl(270,70%,55%), hsl(300,70%,55%), hsl(330,70%,55%), hsl(360,70%,55%));
+      cursor: pointer; position: relative;
+    }
+    .hue-thumb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: white; border: 2px solid rgba(0,0,0,0.3);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      cursor: grab; pointer-events: none;
+      transition: box-shadow 0.1s;
+    }
+    .hue-track:active .hue-thumb { cursor: grabbing; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    .color-preview {
+      display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;
+    }
+    .preview-swatch {
+      width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .preview-label { font-size: 0.82rem; color: var(--text-secondary); }
+    .preview-hue { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+  </style>
 </head>
 <body>
   <div class="app-layout">
@@ -36,36 +69,40 @@
         </div>
       </div>
 
-      <div style="max-width:520px">
+      <div style="max-width:480px">
         <div class="card">
+
+          <!-- Theme toggle -->
           <div class="settings-section">
             <div class="settings-label">Theme</div>
             <div class="theme-toggle">
-              <button class="theme-btn" id="btn-dark" onclick="setTheme('dark')">
-                🌙 Dark
-              </button>
-              <button class="theme-btn" id="btn-light" onclick="setTheme('light')">
-                ☀️ Light
-              </button>
+              <button class="theme-btn" id="btn-dark"  onclick="setTheme('dark')">🌙 Dark</button>
+              <button class="theme-btn" id="btn-light" onclick="setTheme('light')">☀️ Light</button>
             </div>
           </div>
 
           <div class="divider"></div>
 
+          <!-- Hue slider -->
           <div class="settings-section" style="margin-bottom:0">
             <div class="settings-label">Accent Color</div>
-            <div class="color-swatches">
-              <div class="swatch" id="swatch-emerald" style="background:#10b981" onclick="setAccent('emerald')" title="Emerald"></div>
-              <div class="swatch" id="swatch-blue"    style="background:#3b82f6" onclick="setAccent('blue')"    title="Blue"></div>
-              <div class="swatch" id="swatch-violet"  style="background:#8b5cf6" onclick="setAccent('violet')"  title="Violet"></div>
-              <div class="swatch" id="swatch-rose"    style="background:#f43f5e" onclick="setAccent('rose')"    title="Rose"></div>
-              <div class="swatch" id="swatch-amber"   style="background:#f59e0b" onclick="setAccent('amber')"   title="Amber"></div>
-              <div class="swatch" id="swatch-slate"   style="background:#64748b" onclick="setAccent('slate')"   title="Slate"></div>
+            <div class="hue-slider-wrap">
+              <div class="hue-track" id="hue-track">
+                <div class="hue-thumb" id="hue-thumb"></div>
+              </div>
             </div>
-            <p style="color:var(--text-muted);font-size:0.78rem;margin-top:0.75rem">
-              Changes apply instantly across the whole app.
+            <div class="color-preview">
+              <div class="preview-swatch" id="preview-swatch"></div>
+              <div>
+                <div class="preview-label" id="preview-name">Emerald</div>
+                <div class="preview-hue" id="preview-hue">Hue: 160°</div>
+              </div>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.75rem;margin-top:0.75rem">
+              Drag the slider to tint the entire app with any color.
             </p>
           </div>
+
         </div>
       </div>
     </main>
@@ -76,30 +113,67 @@
     if (!getToken()) window.location.href = "login.html";
     initSidebar("settings");
 
+    const track = document.getElementById("hue-track");
+    const thumb = document.getElementById("hue-thumb");
+    let isDragging = false;
+
+    const HUE_NAMES = [
+      [0, "Red"], [30, "Orange"], [55, "Yellow"], [90, "Lime"],
+      [140, "Green"], [160, "Emerald"], [185, "Teal"], [210, "Sky"],
+      [230, "Blue"], [260, "Indigo"], [280, "Violet"], [300, "Purple"],
+      [330, "Rose"], [360, "Red"]
+    ];
+
+    function hueName(h) {
+      let closest = HUE_NAMES[0];
+      for (const entry of HUE_NAMES) {
+        if (Math.abs(entry[0] - h) < Math.abs(closest[0] - h)) closest = entry;
+      }
+      return closest[1];
+    }
+
+    function setHue(hue) {
+      hue = Math.round(Math.max(0, Math.min(360, hue)));
+      localStorage.setItem("hue", hue);
+      document.documentElement.style.setProperty("--hue", hue);
+
+      // Update thumb position
+      const pct = hue / 360;
+      thumb.style.left = `${pct * 100}%`;
+
+      // Update preview
+      const color = `hsl(${hue}, 65%, 55%)`;
+      document.getElementById("preview-swatch").style.background = color;
+      document.getElementById("preview-name").textContent = hueName(hue);
+      document.getElementById("preview-hue").textContent = `Hue: ${hue}°`;
+    }
+
+    function hueFromEvent(e) {
+      const rect = track.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return Math.round(pct * 360);
+    }
+
+    track.addEventListener("mousedown", e => { isDragging = true; setHue(hueFromEvent(e)); });
+    track.addEventListener("touchstart", e => { isDragging = true; setHue(hueFromEvent(e)); }, { passive: true });
+    document.addEventListener("mousemove", e => { if (isDragging) setHue(hueFromEvent(e)); });
+    document.addEventListener("touchmove", e => { if (isDragging) setHue(hueFromEvent(e)); }, { passive: true });
+    document.addEventListener("mouseup", () => isDragging = false);
+    document.addEventListener("touchend", () => isDragging = false);
+
     function setTheme(theme) {
       localStorage.setItem("theme", theme);
       applyTheme();
       updateUI();
     }
 
-    function setAccent(accent) {
-      localStorage.setItem("accent", accent);
-      applyTheme();
-      updateUI();
-    }
-
     function updateUI() {
-      const theme  = localStorage.getItem("theme")  || "dark";
-      const accent = localStorage.getItem("accent") || "emerald";
-
+      const theme = localStorage.getItem("theme") || "dark";
       document.getElementById("btn-dark").classList.toggle("active", theme === "dark");
       document.getElementById("btn-light").classList.toggle("active", theme === "light");
-
-      const accents = ["emerald","blue","violet","rose","amber","slate"];
-      accents.forEach(a => {
-        const el = document.getElementById(`swatch-${a}`);
-        if (el) el.classList.toggle("active", a === accent);
-      });
+      const hue = parseInt(localStorage.getItem("hue") || "160");
+      setHue(hue);
     }
 
     updateUI();

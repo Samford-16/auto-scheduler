@@ -1,61 +1,48 @@
 /* ─── Reset ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ─── Theme Variables ───────────────────────────────── */
-:root {
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --accent-subtle: rgba(16,185,129,0.1);
-  --accent-text: #10b981;
-  --sidebar-width: 220px;
-}
+/* ─── Base theme vars (non-color) ───────────────────── */
+:root { --hue: 160; --sidebar-width: 220px; }
 
-/* DARK MODE (default) */
 body, body.theme-dark {
-  --bg: #0f0f0f;
-  --surface: #171717;
-  --surface2: #1f1f1f;
-  --surface3: #262626;
-  --border: #2e2e2e;
-  --text: #ededed;
-  --text-secondary: #a3a3a3;
-  --text-muted: #6b6b6b;
+  --text: #ededed; --text-secondary: #a3a3a3; --text-muted: #6b6b6b;
   --shadow: 0 1px 3px rgba(0,0,0,0.4);
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
 }
-
-/* LIGHT MODE */
 body.theme-light {
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --surface2: #f5f5f5;
-  --surface3: #efefef;
-  --border: #e5e5e5;
-  --text: #0f0f0f;
-  --text-secondary: #525252;
-  --text-muted: #a3a3a3;
+  --text: #0f0f0f; --text-secondary: #525252; --text-muted: #a3a3a3;
   --shadow: 0 1px 3px rgba(0,0,0,0.08);
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
 }
 
-/* ─── Accent Colors (full UI tint) ──────────────────── */
-/* Each accent shifts the surface palette with a color tint */
+/* ─── Dynamic HSL Accent Tint System ────────────────── */
+/* --hue is set by JS. All accent + surface colors derive from it. */
 
-body.theme-dark.accent-emerald { --accent:#10b981; --accent-hover:#059669; --accent-subtle:rgba(16,185,129,0.12); --accent-text:#10b981; --bg:#090f0c; --surface:#111a15; --surface2:#19211d; --surface3:#1f2921; --border:#1e3328; }
-body.theme-dark.accent-blue    { --accent:#3b82f6; --accent-hover:#2563eb; --accent-subtle:rgba(59,130,246,0.12);  --accent-text:#3b82f6; --bg:#090d14; --surface:#10151f; --surface2:#181d2b; --surface3:#1e2433; --border:#1e2a42; }
-body.theme-dark.accent-violet  { --accent:#8b5cf6; --accent-hover:#7c3aed; --accent-subtle:rgba(139,92,246,0.12); --accent-text:#8b5cf6; --bg:#0d0b14; --surface:#16121f; --surface2:#1d182a; --surface3:#231d32; --border:#2a2040; }
-body.theme-dark.accent-rose    { --accent:#f43f5e; --accent-hover:#e11d48; --accent-subtle:rgba(244,63,94,0.12);  --accent-text:#f43f5e; --bg:#140a0c; --surface:#1f1013; --surface2:#29161a; --surface3:#311a1f; --border:#3d1a21; }
-body.theme-dark.accent-amber   { --accent:#f59e0b; --accent-hover:#d97706; --accent-subtle:rgba(245,158,11,0.12); --accent-text:#f59e0b; --bg:#110e05; --surface:#1a1508; --surface2:#221c0c; --surface3:#2a2210; --border:#38300e; }
-body.theme-dark.accent-slate   { --accent:#94a3b8; --accent-hover:#7a8fa8; --accent-subtle:rgba(148,163,184,0.1); --accent-text:#94a3b8; --bg:#0c0d0f; --surface:#141618; --surface2:#1b1e22; --surface3:#21252a; --border:#2a2f37; }
+/* Dark tinted surfaces */
+body.theme-dark {
+  --accent:         hsl(var(--hue), 65%, 55%);
+  --accent-hover:   hsl(var(--hue), 65%, 45%);
+  --accent-subtle:  hsla(var(--hue), 65%, 55%, 0.12);
+  --accent-text:    hsl(var(--hue), 65%, 62%);
+  --bg:             hsl(var(--hue), 18%, 6%);
+  --surface:        hsl(var(--hue), 14%, 9%);
+  --surface2:       hsl(var(--hue), 12%, 13%);
+  --surface3:       hsl(var(--hue), 10%, 16%);
+  --border:         hsl(var(--hue), 14%, 20%);
+}
 
-body.theme-light.accent-emerald { --accent:#059669; --accent-hover:#047857; --accent-subtle:rgba(5,150,105,0.08);  --accent-text:#047857; --bg:#f2faf6; --surface:#ffffff; --surface2:#eef8f2; --surface3:#e5f3ec; --border:#c8e8d7; }
-body.theme-light.accent-blue    { --accent:#2563eb; --accent-hover:#1d4ed8; --accent-subtle:rgba(37,99,235,0.08);  --accent-text:#1d4ed8; --bg:#f2f5fc; --surface:#ffffff; --surface2:#edf1fb; --surface3:#e4eaf8; --border:#c5d3f4; }
-body.theme-light.accent-violet  { --accent:#7c3aed; --accent-hover:#6d28d9; --accent-subtle:rgba(124,58,237,0.08); --accent-text:#6d28d9; --bg:#f5f3fc; --surface:#ffffff; --surface2:#efecfb; --surface3:#e8e3f8; --border:#d0c8f4; }
-body.theme-light.accent-rose    { --accent:#e11d48; --accent-hover:#be123c; --accent-subtle:rgba(225,29,72,0.08);  --accent-text:#be123c; --bg:#fdf2f4; --surface:#ffffff; --surface2:#fcedf0; --surface3:#f9e3e7; --border:#f3c4cc; }
-body.theme-light.accent-amber   { --accent:#d97706; --accent-hover:#b45309; --accent-subtle:rgba(217,119,6,0.08);  --accent-text:#b45309; --bg:#fdf8f0; --surface:#ffffff; --surface2:#fdf3e3; --surface3:#faecd4; --border:#f3d9a0; }
-body.theme-light.accent-slate   { --accent:#475569; --accent-hover:#334155; --accent-subtle:rgba(71,85,105,0.08);  --accent-text:#334155; --bg:#f4f5f7; --surface:#ffffff; --surface2:#edf0f3; --surface3:#e4e8ed; --border:#ccd2da; }
+/* Light tinted surfaces */
+body.theme-light {
+  --accent:         hsl(var(--hue), 65%, 40%);
+  --accent-hover:   hsl(var(--hue), 65%, 32%);
+  --accent-subtle:  hsla(var(--hue), 65%, 50%, 0.08);
+  --accent-text:    hsl(var(--hue), 65%, 35%);
+  --bg:             hsl(var(--hue), 30%, 97%);
+  --surface:        hsl(var(--hue), 20%, 100%);
+  --surface2:       hsl(var(--hue), 22%, 95%);
+  --surface3:       hsl(var(--hue), 20%, 91%);
+  --border:         hsl(var(--hue), 22%, 85%);
+}
 
 /* ─── Base ──────────────────────────────────────────── */
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; transition: background 0.2s, color 0.2s; }

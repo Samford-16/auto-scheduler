@@ -11,11 +11,12 @@ function logout() {
 
 // ─── Theme System ────────────────────────────────────
 function applyTheme() {
-  const theme  = localStorage.getItem("theme")  || "dark";
-  const accent = localStorage.getItem("accent") || "emerald";
+  const theme = localStorage.getItem("theme") || "dark";
+  const hue   = localStorage.getItem("hue")   || "160";
   document.body.className = document.body.className
-    .replace(/theme-\S+/g, "").replace(/accent-\S+/g, "").trim();
-  document.body.classList.add(`theme-${theme}`, `accent-${accent}`);
+    .replace(/theme-\S+/g, "").trim();
+  document.body.classList.add(`theme-${theme}`);
+  document.documentElement.style.setProperty("--hue", hue);
 }
 
 // Call immediately on every page load
