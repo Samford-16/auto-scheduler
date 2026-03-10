@@ -455,11 +455,13 @@
     }
 
     function loadTemplate(id) {
+      // Clear immediately before fetch to prevent stale rows
+      document.getElementById("shifts-builder").innerHTML = "";
+      document.getElementById("schedule-card").style.display = "none";
       fetch(`${API}/templates`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         const t = data.templates.find(x => x.id === id);
         if (!t) return;
         document.getElementById("shifts-builder").innerHTML = "";
-        document.getElementById("schedule-card").style.display = "none";
         t.shifts.forEach(s => {
           const row = document.createElement("div");
           row.className = "shift-row";
