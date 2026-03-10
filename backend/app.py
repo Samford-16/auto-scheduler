@@ -354,8 +354,12 @@ def generate_schedule():
             assigned_today[wid].add(day)
             assigned.append({"worker": worker["name"], "day": day})
             count += 1
-        # Track unfilled slots
-        if count < needed:
+        # Insert blank placeholder rows for unfilled slots
+        for _ in range(needed - count):
+            conn.execute(
+                "INSERT INTO schedule (company_id, worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?,?)",
+                (company["id"], None, day, start, end, role_id)
+            )
             unassigned.append({"day": day, "start": start, "end": end, "role_id": role_id, "needed": needed, "filled": count})
 
     conn.commit()
@@ -396,7 +400,7 @@ def get_schedule():
     rows = conn.execute("""
         SELECT s.id, s.day, s.start_time, s.end_time, w.name as worker, w.id as worker_id, r.name as role, r.id as role_id
         FROM schedule s
-        JOIN workers w ON s.worker_id = w.id
+        LEFT JOIN workers w ON s.worker_id = w.id
         LEFT JOIN roles r ON s.role_id = r.id
         WHERE s.company_id=?
         ORDER BY s.day, s.start_time

@@ -301,11 +301,15 @@
                 <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${slot.workers.length} worker${slot.workers.length>1?'s':''}</span>
               </div>`;
             slot.workers.forEach(s => {
-              html += `<div id="shift-row-${s.id}" style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border)">
-                <span style="font-weight:500;color:var(--text);flex:1">${s.worker}</span>
+              const isBlank = !s.worker;
+              html += `<div id="shift-row-${s.id}" style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);${isBlank ? 'background:rgba(248,113,113,0.04)' : ''}">
+                ${isBlank
+                  ? `<span style="flex:1;font-style:italic;color:#f87171;font-size:0.85rem">⚠ Unassigned — click Edit to fill</span>`
+                  : `<span style="font-weight:500;color:var(--text);flex:1">${s.worker}</span>`
+                }
                 <div class="no-print" style="display:flex;gap:0.4rem">
-                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openEditModal(${s.id},'${s.worker}','${s.day}','${s.start_time}','${s.end_time}',${s.role_id||0},'${s.role||''}')">✏ Edit</button>
-                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openSwapModal(${s.id},'${s.worker}','${s.day}')">⇄ Swap</button>
+                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem${isBlank ? ';border-color:rgba(248,113,113,0.4);color:#f87171' : ''}" onclick="openEditModal(${s.id},'${s.worker||''}','${s.day}','${s.start_time}','${s.end_time}',${s.role_id||0},'${s.role||''}')">✏ Edit</button>
+                  ${!isBlank ? `<button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openSwapModal(${s.id},'${s.worker}','${s.day}')">⇄ Swap</button>` : ''}
                   <button class="btn btn-danger-soft" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="deleteShift(${s.id})">Remove</button>
                 </div>
               </div>`;
