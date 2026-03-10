@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: #2a2a3a; --accent: #6c63ff; --accent2: #ff6584;
+      --text: #f0f0f8; --muted: #7a7a9a; --danger: #f87171;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+    .bg-grid {
+      position: fixed; inset: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+
+    .card {
+      position: relative; z-index: 1;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .logo { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 0.3rem;
+    }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.2rem; }
+    label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    input {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 0.8rem 1rem; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; transition: border-color 0.2s; width: 100%;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+
+    .btn {
+      width: 100%; padding: 0.9rem; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #8b7fff); color: white; box-shadow: 0 4px 16px rgba(108,99,255,0.3); margin-bottom: 1rem; }
+    .btn-primary:hover { transform: translateY(-1px); }
+
+    .error { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+    .footer-link { text-align: center; font-size: 0.85rem; color: var(--muted); }
+    .footer-link a { color: var(--accent); text-decoration: none; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="card">
+    <div class="logo">A-Schedule</div>
+    <p class="subtitle">Sign in to your account</p>
+
+    <div class="error" id="error"></div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@company.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
+    </div>
+
+    <button class="btn btn-primary" onclick="login()">Sign In</button>
+    <p class="footer-link">Don't have an account? <a href="signup.html">Sign up free</a></p>
+  </div>
+
+  <script>
+    const API = "http://34.28.196.192:5000";
+
+    // Redirect if already logged in
+    if (localStorage.getItem("token")) window.location.href = "index.html";
+
+    function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const err = document.getElementById("error");
+      err.style.display = "none";
+
+      if (!email || !password) { err.textContent = "Please fill in all fields."; err.style.display = "block"; return; }
+
+      fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      }).then(r => r.json()).then(data => {
+        if (data.status === "success") {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("company", JSON.stringify(data.company));
+          window.location.href = "index.html";
+        } else {
+          err.textContent = data.message || "Login failed.";
+          err.style.display = "block";
+        }
+      }).catch(() => {
+        err.textContent = "Could not connect to server.";
+        err.style.display = "block";
+      });
+    }
+  </script>
+</body>
+</html>

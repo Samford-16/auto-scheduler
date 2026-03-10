@@ -13,27 +13,34 @@ def init_db():
     conn = get_db()
 
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS company (
+    CREATE TABLE IF NOT EXISTS companies (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        open_time TEXT NOT NULL,
-        close_time TEXT NOT NULL
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        open_time TEXT DEFAULT '09:00',
+        close_time TEXT DEFAULT '17:00',
+        token TEXT
     )
     """)
 
     conn.execute("""
     CREATE TABLE IF NOT EXISTS roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        company_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        FOREIGN KEY(company_id) REFERENCES companies(id)
     )
     """)
 
     conn.execute("""
     CREATE TABLE IF NOT EXISTS workers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         max_hours INTEGER NOT NULL,
-        overtime TEXT NOT NULL
+        overtime TEXT NOT NULL,
+        FOREIGN KEY(company_id) REFERENCES companies(id)
     )
     """)
 
@@ -59,11 +66,13 @@ def init_db():
     conn.execute("""
     CREATE TABLE IF NOT EXISTS schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
         worker_id INTEGER,
         day TEXT,
         start_time TEXT,
         end_time TEXT,
         role_id INTEGER,
+        FOREIGN KEY(company_id) REFERENCES companies(id),
         FOREIGN KEY(worker_id) REFERENCES workers(id),
         FOREIGN KEY(role_id) REFERENCES roles(id)
     )

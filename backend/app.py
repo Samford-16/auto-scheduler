@@ -1,35 +1,135 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from database import get_db, init_db
+import hashlib
+import secrets
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 init_db()
 
 # ──────────────────────────────────────────────
-# COMPANY
+# AUTH HELPERS
 # ──────────────────────────────────────────────
 
-@app.route("/company", methods=["GET"])
-def get_company():
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def get_company_from_token(token):
+    if not token:
+        return None
     conn = get_db()
-    company = conn.execute("SELECT * FROM company LIMIT 1").fetchone()
+    company = conn.execute("SELECT * FROM companies WHERE token=?", (token,)).fetchone()
     conn.close()
+    return company
+
+def auth_required():
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    company = get_company_from_token(token)
+    return company
+
+# ──────────────────────────────────────────────
+# AUTH ROUTES
+# ──────────────────────────────────────────────
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    data = request.json
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if not name or not email or not password:
+        return jsonify({"status": "error", "message": "All fields required"}), 400
+
+    conn = get_db()
+    existing = conn.execute("SELECT id FROM companies WHERE email=?", (email,)).fetchone()
+    if existing:
+        conn.close()
+        return jsonify({"status": "error", "message": "Email already registered"}), 400
+
+    token = secrets.token_hex(32)
+    hashed = hash_password(password)
+
+    conn.execute(
+        "INSERT INTO companies (name, email, password, token) VALUES (?,?,?,?)",
+        (name, email, hashed, token)
+    )
+    conn.commit()
+
+    company = conn.execute("SELECT * FROM companies WHERE email=?", (email,)).fetchone()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "company": {"id": company["id"], "name": company["name"], "email": company["email"]}
+    })
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    conn = get_db()
+    company = conn.execute("SELECT * FROM companies WHERE email=?", (email,)).fetchone()
+
+    if not company or company["password"] != hash_password(password):
+        conn.close()
+        return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+
+    # Refresh token on login
+    token = secrets.token_hex(32)
+    conn.execute("UPDATE companies SET token=? WHERE id=?", (token, company["id"]))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "company": {"id": company["id"], "name": company["name"], "email": company["email"]}
+    })
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    company = auth_required()
     if company:
-        return jsonify({"company": dict(company)})
-    return jsonify({"company": None})
+        conn = get_db()
+        conn.execute("UPDATE companies SET token=NULL WHERE id=?", (company["id"],))
+        conn.commit()
+        conn.close()
+    return jsonify({"status": "success"})
+
+@app.route("/me", methods=["GET"])
+def me():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    return jsonify({"company": {
+        "id": company["id"],
+        "name": company["name"],
+        "email": company["email"],
+        "open_time": company["open_time"],
+        "close_time": company["close_time"]
+    }})
+
+# ──────────────────────────────────────────────
+# COMPANY SETTINGS
+# ──────────────────────────────────────────────
 
 @app.route("/company", methods=["POST"])
 def save_company():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     data = request.json
     conn = get_db()
-    existing = conn.execute("SELECT * FROM company LIMIT 1").fetchone()
-    if existing:
-        conn.execute("UPDATE company SET name=?, open_time=?, close_time=? WHERE id=?",
-                     (data["name"], data["open_time"], data["close_time"], existing["id"]))
-    else:
-        conn.execute("INSERT INTO company (name, open_time, close_time) VALUES (?,?,?)",
-                     (data["name"], data["open_time"], data["close_time"]))
+    conn.execute(
+        "UPDATE companies SET name=?, open_time=?, close_time=? WHERE id=?",
+        (data["name"], data["open_time"], data["close_time"], company["id"])
+    )
     conn.commit()
     conn.close()
     return jsonify({"status": "saved"})
@@ -40,28 +140,40 @@ def save_company():
 
 @app.route("/roles", methods=["GET"])
 def get_roles():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     conn = get_db()
-    roles = conn.execute("SELECT * FROM roles").fetchall()
+    roles = conn.execute("SELECT * FROM roles WHERE company_id=?", (company["id"],)).fetchall()
     conn.close()
     return jsonify({"roles": [dict(r) for r in roles]})
 
 @app.route("/roles", methods=["POST"])
 def add_role():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     data = request.json
     conn = get_db()
-    try:
-        conn.execute("INSERT INTO roles (name) VALUES (?)", (data["name"],))
-        conn.commit()
-    except:
+    existing = conn.execute(
+        "SELECT id FROM roles WHERE company_id=? AND name=?",
+        (company["id"], data["name"])
+    ).fetchone()
+    if existing:
         conn.close()
         return jsonify({"status": "error", "message": "Role already exists"}), 400
+    conn.execute("INSERT INTO roles (company_id, name) VALUES (?,?)", (company["id"], data["name"]))
+    conn.commit()
     conn.close()
     return jsonify({"status": "success"})
 
 @app.route("/roles/<int:role_id>", methods=["DELETE"])
 def delete_role(role_id):
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     conn = get_db()
-    conn.execute("DELETE FROM roles WHERE id=?", (role_id,))
+    conn.execute("DELETE FROM roles WHERE id=? AND company_id=?", (role_id, company["id"]))
     conn.execute("DELETE FROM worker_roles WHERE role_id=?", (role_id,))
     conn.commit()
     conn.close()
@@ -73,8 +185,11 @@ def delete_role(role_id):
 
 @app.route("/workers", methods=["GET"])
 def get_workers():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     conn = get_db()
-    workers = conn.execute("SELECT * FROM workers").fetchall()
+    workers = conn.execute("SELECT * FROM workers WHERE company_id=?", (company["id"],)).fetchall()
     result = []
     for w in workers:
         availability = conn.execute(
@@ -85,13 +200,12 @@ def get_workers():
                JOIN worker_roles wr ON r.id = wr.role_id
                WHERE wr.worker_id=?""", (w["id"],)
         ).fetchall()
-        days = [d["day"] for d in availability]
         result.append({
             "id": w["id"],
             "name": w["name"],
             "max_hours": w["max_hours"],
             "overtime": w["overtime"],
-            "availability": days,
+            "availability": [d["day"] for d in availability],
             "roles": [dict(r) for r in roles]
         })
     conn.close()
@@ -99,33 +213,37 @@ def get_workers():
 
 @app.route("/add-worker", methods=["POST"])
 def add_worker():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     data = request.json
-    name = data["name"]
-    max_hours = data["max_hours"]
-    overtime = data["overtime"]
-    days = data["availability"]
-    role_ids = data.get("roles", [])
-
     conn = get_db()
     cursor = conn.execute(
-        "INSERT INTO workers (name, max_hours, overtime) VALUES (?,?,?)",
-        (name, max_hours, overtime)
+        "INSERT INTO workers (company_id, name, max_hours, overtime) VALUES (?,?,?,?)",
+        (company["id"], data["name"], data["max_hours"], data["overtime"])
     )
     worker_id = cursor.lastrowid
-
-    for day in days:
+    for day in data.get("availability", []):
         conn.execute("INSERT INTO availability (worker_id, day) VALUES (?,?)", (worker_id, day))
-
-    for role_id in role_ids:
+    for role_id in data.get("roles", []):
         conn.execute("INSERT INTO worker_roles (worker_id, role_id) VALUES (?,?)", (worker_id, role_id))
-
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
 
 @app.route("/delete-worker/<int:worker_id>", methods=["DELETE"])
 def delete_worker(worker_id):
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     conn = get_db()
+    # Make sure worker belongs to this company
+    worker = conn.execute(
+        "SELECT id FROM workers WHERE id=? AND company_id=?", (worker_id, company["id"])
+    ).fetchone()
+    if not worker:
+        conn.close()
+        return jsonify({"status": "error"}), 403
     conn.execute("DELETE FROM availability WHERE worker_id=?", (worker_id,))
     conn.execute("DELETE FROM worker_roles WHERE worker_id=?", (worker_id,))
     conn.execute("DELETE FROM workers WHERE id=?", (worker_id,))
@@ -139,19 +257,22 @@ def delete_worker(worker_id):
 
 @app.route("/generate-schedule", methods=["POST"])
 def generate_schedule():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
+
     data = request.json
-    # data = { shifts: [ {day, start_time, end_time, role_id, workers_needed}, ... ] }
     shifts = data.get("shifts", [])
-
     conn = get_db()
-    conn.execute("DELETE FROM schedule")  # clear old schedule
+    conn.execute("DELETE FROM schedule WHERE company_id=?", (company["id"],))
 
-    workers = conn.execute("SELECT * FROM workers").fetchall()
-
-    # Track hours assigned per worker this week
+    workers = conn.execute(
+        "SELECT * FROM workers WHERE company_id=?", (company["id"],)
+    ).fetchall()
     hours_used = {w["id"]: 0 for w in workers}
 
     assigned = []
+    fmt = "%H:%M"
 
     for shift in shifts:
         day = shift["day"]
@@ -160,46 +281,32 @@ def generate_schedule():
         role_id = shift["role_id"]
         needed = int(shift["workers_needed"])
 
-        # Calculate shift hours
-        from datetime import datetime
-        fmt = "%H:%M"
         try:
             shift_hours = (datetime.strptime(end, fmt) - datetime.strptime(start, fmt)).seconds / 3600
         except:
             shift_hours = 8
 
-        # Get available workers for this day with the right role
         eligible = conn.execute("""
             SELECT w.* FROM workers w
             JOIN availability a ON w.id = a.worker_id
             JOIN worker_roles wr ON w.id = wr.worker_id
-            WHERE a.day=? AND wr.role_id=?
-        """, (day, role_id)).fetchall()
+            WHERE a.day=? AND wr.role_id=? AND w.company_id=?
+        """, (day, role_id, company["id"])).fetchall()
 
         count = 0
         for worker in eligible:
             if count >= needed:
                 break
             wid = worker["id"]
-            max_h = worker["max_hours"]
-            allows_ot = worker["overtime"] == "yes"
-
             projected = hours_used[wid] + shift_hours
-            if projected > max_h and not allows_ot:
-                continue  # skip, would exceed max hours
-
+            if projected > worker["max_hours"] and worker["overtime"] != "yes":
+                continue
             conn.execute(
-                "INSERT INTO schedule (worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?)",
-                (wid, day, start, end, role_id)
+                "INSERT INTO schedule (company_id, worker_id, day, start_time, end_time, role_id) VALUES (?,?,?,?,?,?)",
+                (company["id"], wid, day, start, end, role_id)
             )
             hours_used[wid] = projected
-            assigned.append({
-                "worker": worker["name"],
-                "day": day,
-                "start_time": start,
-                "end_time": end,
-                "role_id": role_id
-            })
+            assigned.append({"worker": worker["name"], "day": day})
             count += 1
 
     conn.commit()
@@ -208,14 +315,18 @@ def generate_schedule():
 
 @app.route("/schedule", methods=["GET"])
 def get_schedule():
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
     conn = get_db()
     rows = conn.execute("""
         SELECT s.day, s.start_time, s.end_time, w.name as worker, r.name as role
         FROM schedule s
         JOIN workers w ON s.worker_id = w.id
         LEFT JOIN roles r ON s.role_id = r.id
+        WHERE s.company_id=?
         ORDER BY s.day, s.start_time
-    """).fetchall()
+    """, (company["id"],)).fetchall()
     conn.close()
     return jsonify({"schedule": [dict(r) for r in rows]})
 
