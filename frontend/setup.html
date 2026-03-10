@@ -143,7 +143,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="js/auth.js"></script>
-  
+
 <script>
     const API = "http://34.28.196.192:5000";
 
@@ -156,7 +156,8 @@
 
     // Load company
     document.addEventListener("DOMContentLoaded", () => {
-  fetch(`${API}/me`, { headers: authHeaders() }).then(r=>r.json()).then(data => {
+  const token = localStorage.getItem("token");
+  fetch(`${API}/me`, { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }).then(r=>r.json()).then(data => {
     if (data.company) {
       document.getElementById("company-name").value = data.company.name || "";
       document.getElementById("open-time").value = data.company.open_time || "";
@@ -164,6 +165,7 @@
     }
   });
 });
+
 
 
     // Load roles
