@@ -153,13 +153,13 @@
     }
 
     // Load company
-    fetch(`${API}/company`).then(r => r.json()).then(data => {
-      if (data.company) {
-        document.getElementById("company-name").value = data.company.name;
-        document.getElementById("open-time").value = data.company.open_time;
-        document.getElementById("close-time").value = data.company.close_time;
-      }
-    });
+    fetch(`${API}/me`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+  if (data.company) {
+    document.getElementById("company-name").value = data.company.name || "";
+    document.getElementById("open-time").value = data.company.open_time || "";
+    document.getElementById("close-time").value = data.company.close_time || "";
+  }
+});
 
     // Load roles
     function loadRoles() {
