@@ -108,7 +108,7 @@
         if (data.status === "success") {
           localStorage.setItem("token", data.token);
           localStorage.setItem("company", JSON.stringify(data.company));
-          window.location.href = "setup.html";
+          window.location.href = "dashboard.html";
         } else {
           err.textContent = data.message || "Signup failed.";
           err.style.display = "block";
