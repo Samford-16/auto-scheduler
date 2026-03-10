@@ -313,7 +313,10 @@ def generate_schedule():
     conn.execute("DELETE FROM schedule WHERE company_id=?", (company["id"],))
     workers = conn.execute("SELECT * FROM workers WHERE company_id=?", (company["id"],)).fetchall()
     hours_used = {w["id"]: 0 for w in workers}
+    # Track which workers are already assigned on each day — one shift per worker per day
+    assigned_today = {w["id"]: set() for w in workers}  # {worker_id: {day, ...}}
     assigned = []
+    unassigned = []
     fmt = "%H:%M"
 
     for shift in shifts:
@@ -337,6 +340,9 @@ def generate_schedule():
             if count >= needed:
                 break
             wid = worker["id"]
+            # One shift per worker per day — skip if already working that day
+            if day in assigned_today[wid]:
+                continue
             projected = hours_used[wid] + shift_hours
             if projected > worker["max_hours"] and worker["overtime"] != "yes":
                 continue
@@ -345,13 +351,41 @@ def generate_schedule():
                 (company["id"], wid, day, start, end, role_id)
             )
             hours_used[wid] = projected
+            assigned_today[wid].add(day)
             assigned.append({"worker": worker["name"], "day": day})
             count += 1
+        # Track unfilled slots
+        if count < needed:
+            unassigned.append({"day": day, "start": start, "end": end, "role_id": role_id, "needed": needed, "filled": count})
 
     conn.commit()
     conn.close()
-    log_action(company["id"], "GENERATE_SCHEDULE", f"Generated {len(assigned)} shift assignments")
-    return jsonify({"status": "success", "assigned": assigned})
+    log_action(company["id"], "GENERATE_SCHEDULE", f"Generated {len(assigned)} shift assignments ({len(unassigned)} slots unfilled)")
+    return jsonify({"status": "success", "assigned": assigned, "unassigned": unassigned})
+
+@app.route("/schedule/<int:shift_id>", methods=["PUT"])
+def edit_shift(shift_id):
+    company = auth_required()
+    if not company:
+        return jsonify({"status": "error"}), 401
+    data = request.json
+    conn = get_db()
+    shift = conn.execute("SELECT * FROM schedule WHERE id=? AND company_id=?", (shift_id, company["id"])).fetchone()
+    if not shift:
+        conn.close()
+        return jsonify({"status": "error", "message": "Shift not found"}), 404
+    worker_id = data.get("worker_id", shift["worker_id"])
+    start_time = data.get("start_time", shift["start_time"])
+    end_time = data.get("end_time", shift["end_time"])
+    role_id = data.get("role_id", shift["role_id"])
+    conn.execute(
+        "UPDATE schedule SET worker_id=?, start_time=?, end_time=?, role_id=? WHERE id=?",
+        (worker_id, start_time, end_time, role_id, shift_id)
+    )
+    conn.commit()
+    conn.close()
+    log_action(company["id"], "EDIT_SHIFT", f"Edited shift ID: {shift_id}")
+    return jsonify({"status": "success"})
 
 @app.route("/schedule", methods=["GET"])
 def get_schedule():
