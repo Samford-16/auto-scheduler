@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log — A-Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .log-table th {
+      text-align: left; padding: 0.6rem 1rem;
+      background: var(--surface2); color: var(--text-muted);
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+      font-weight: 500; border-bottom: 1px solid var(--border);
+    }
+    .log-table td {
+      padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+      color: var(--text-secondary); vertical-align: middle;
+    }
+    .log-table tr:last-child td { border-bottom: none; }
+    .log-table tr:hover td { background: var(--surface2); }
+
+    .action-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.25rem 0.6rem; border-radius: 5px;
+      font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+    }
+    .action-ADD_WORKER     { background: rgba(52,211,153,0.12); color: #34d399; }
+    .action-DELETE_WORKER  { background: rgba(248,113,113,0.12); color: #f87171; }
+    .action-EDIT_WORKER    { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+    .action-GENERATE_SCHEDULE { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .action-CLEAR_SCHEDULE { background: rgba(248,113,113,0.12); color: #f87171; }
+    .action-DELETE_SHIFT   { background: rgba(248,113,113,0.12); color: #f87171; }
+    .action-ADD_ROLE       { background: rgba(52,211,153,0.12);  color: #34d399; }
+    .action-DELETE_ROLE    { background: rgba(248,113,113,0.12); color: #f87171; }
+
+    .action-icon { font-size: 0.8rem; }
+
+    .ts { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+    .detail-text { color: var(--text-secondary); }
+
+    .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .filter-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-secondary); padding: 0.35rem 0.75rem;
+      border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+      font-family: inherit; font-weight: 500; transition: all 0.1s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--accent); color: var(--accent-text);
+      background: var(--accent-subtle);
+    }
+    .search-input {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 0.35rem 0.75rem; border-radius: 6px;
+      font-size: 0.82rem; font-family: inherit; outline: none;
+      transition: border-color 0.15s; width: 220px;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .log-count { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; align-self: center; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">A-Schedule</a>
+      <nav class="sidebar-nav">
+        <span class="sidebar-section">Workspace</span>
+        <a href="dashboard.html"  class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
+        <a href="schedule.html"   class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <a href="calendar.html"   class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <span class="sidebar-section">Account</span>
+        <a href="setup.html"      class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
+        <a href="settings.html"   class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
+        <a href="audit-log.html"  class="nav-item active" data-page="audit"><span class="icon">🔍</span> Audit Log</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-company">
+          <div class="sidebar-company-avatar" id="sidebar-company-initial">—</div>
+          <span class="sidebar-company-name" id="sidebar-company-name">—</span>
+        </div>
+        <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h1>Audit Log</h1>
+          <p class="subtitle">A record of every action taken in your account.</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="ALL" onclick="setFilter('ALL', this)">All</button>
+        <button class="filter-btn" data-filter="WORKER"   onclick="setFilter('WORKER', this)">Workers</button>
+        <button class="filter-btn" data-filter="SCHEDULE" onclick="setFilter('SCHEDULE', this)">Schedule</button>
+        <button class="filter-btn" data-filter="ROLE"     onclick="setFilter('ROLE', this)">Roles</button>
+        <input class="search-input" type="text" id="search-input" placeholder="Search logs..." oninput="applyFilters()">
+        <span class="log-count" id="log-count"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="card card-overflow" style="padding:0">
+        <div id="log-body">
+          <div style="padding:2rem;text-align:center;color:var(--text-muted)">Loading...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    if (!getToken()) window.location.href = "login.html";
+    initSidebar("audit");
+
+    const ACTION_META = {
+      ADD_WORKER:        { icon: "➕", label: "Add Worker" },
+      DELETE_WORKER:     { icon: "🗑", label: "Delete Worker" },
+      EDIT_WORKER:       { icon: "✏️", label: "Edit Worker" },
+      GENERATE_SCHEDULE: { icon: "⚡", label: "Generate Schedule" },
+      CLEAR_SCHEDULE:    { icon: "🧹", label: "Clear Schedule" },
+      DELETE_SHIFT:      { icon: "❌", label: "Delete Shift" },
+      ADD_ROLE:          { icon: "➕", label: "Add Role" },
+      DELETE_ROLE:       { icon: "🗑", label: "Delete Role" },
+    };
+
+    let allLogs = [];
+    let currentFilter = "ALL";
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const search = document.getElementById("search-input").value.toLowerCase();
+      let filtered = allLogs;
+
+      if (currentFilter !== "ALL") {
+        filtered = filtered.filter(l => l.action.includes(currentFilter));
+      }
+      if (search) {
+        filtered = filtered.filter(l =>
+          l.action.toLowerCase().includes(search) ||
+          (l.detail || "").toLowerCase().includes(search) ||
+          l.timestamp.includes(search)
+        );
+      }
+
+      document.getElementById("log-count").textContent = `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`;
+      renderTable(filtered);
+    }
+
+    function formatTimestamp(ts) {
+      const d = new Date(ts + " UTC");
+      return d.toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true
+      });
+    }
+
+    function renderTable(logs) {
+      const body = document.getElementById("log-body");
+      if (!logs.length) {
+        body.innerHTML = `<div class="empty-state" style="padding:2.5rem">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">No log entries found</div>
+          <div class="empty-sub">Actions you take will appear here.</div>
+        </div>`;
+        return;
+      }
+
+      const rows = logs.map(l => {
+        const meta = ACTION_META[l.action] || { icon: "•", label: l.action };
+        return `<tr>
+          <td class="ts">${formatTimestamp(l.timestamp)}</td>
+          <td>
+            <span class="action-badge action-${l.action}">
+              <span class="action-icon">${meta.icon}</span>
+              ${meta.label}
+            </span>
+          </td>
+          <td class="detail-text">${l.detail || '—'}</td>
+        </tr>`;
+      }).join("");
+
+      body.innerHTML = `<table class="log-table">
+        <thead><tr>
+          <th style="width:180px">Timestamp</th>
+          <th style="width:180px">Action</th>
+          <th>Detail</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    fetch(`${API}/audit-log`, { headers: authHeaders() })
+      .then(r => r.json()).then(data => {
+        allLogs = data.logs || [];
+        document.getElementById("log-count").textContent = `${allLogs.length} entries`;
+        applyFilters();
+      }).catch(() => {
+        document.getElementById("log-body").innerHTML =
+          `<div style="padding:2rem;text-align:center;color:var(--text-muted)">Could not load audit log.</div>`;
+      });
+  </script>
+</body>
+</html>

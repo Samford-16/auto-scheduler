@@ -1,12 +1,44 @@
 const API = "http://34.28.196.192:5000";
 
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours in ms
+
 function getToken() { return localStorage.getItem("token"); }
 function getCompany() { const c = localStorage.getItem("company"); return c ? JSON.parse(c) : null; }
 function authHeaders() { return { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` }; }
 
+// ─── Session Expiry ───────────────────────────────────
+function setLoginTime() {
+  localStorage.setItem("login_time", Date.now().toString());
+}
+
+function isSessionExpired() {
+  const loginTime = localStorage.getItem("login_time");
+  if (!loginTime) return true;
+  return (Date.now() - parseInt(loginTime)) > SESSION_DURATION;
+}
+
+function checkSession() {
+  if (!getToken()) return;
+  if (isSessionExpired()) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("company");
+    localStorage.removeItem("login_time");
+    window.location.href = "login.html?reason=expired";
+  }
+}
+
+checkSession();
+setInterval(checkSession, 60 * 1000);
+
 function logout() {
   fetch(`${API}/logout`, { method: "POST", headers: authHeaders() })
-    .finally(() => { localStorage.clear(); applyTheme(); window.location.href = "index.html"; });
+    .finally(() => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("company");
+      localStorage.removeItem("login_time");
+      applyTheme();
+      window.location.href = "index.html";
+    });
 }
 
 // ─── Theme System ────────────────────────────────────

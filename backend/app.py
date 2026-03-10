@@ -30,6 +30,19 @@ def auth_required():
     return company
 
 # ──────────────────────────────────────────────
+# AUDIT LOG HELPER
+# ──────────────────────────────────────────────
+
+def log_action(company_id, action, detail=""):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO audit_log (company_id, action, detail, timestamp) VALUES (?, ?, ?, ?)",
+        (company_id, action, detail, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+    )
+    conn.commit()
+    conn.close()
+
+# ──────────────────────────────────────────────
 # AUTH ROUTES
 # ──────────────────────────────────────────────
 
@@ -165,6 +178,7 @@ def add_role():
     conn.execute("INSERT INTO roles (company_id, name) VALUES (?,?)", (company["id"], data["name"]))
     conn.commit()
     conn.close()
+    log_action(company["id"], "ADD_ROLE", f"Added role: {data['name']}")
     return jsonify({"status": "success"})
 
 @app.route("/roles/<int:role_id>", methods=["DELETE"])
@@ -173,6 +187,9 @@ def delete_role(role_id):
     if not company:
         return jsonify({"status": "error"}), 401
     conn = get_db()
+    role = conn.execute("SELECT name FROM roles WHERE id=? AND company_id=?", (role_id, company["id"])).fetchone()
+    if role:
+        log_action(company["id"], "DELETE_ROLE", f"Deleted role: {role['name']}")
     conn.execute("DELETE FROM roles WHERE id=? AND company_id=?", (role_id, company["id"]))
     conn.execute("DELETE FROM worker_roles WHERE role_id=?", (role_id,))
     conn.commit()
@@ -229,6 +246,7 @@ def add_worker():
         conn.execute("INSERT INTO worker_roles (worker_id, role_id) VALUES (?,?)", (worker_id, role_id))
     conn.commit()
     conn.close()
+    log_action(company["id"], "ADD_WORKER", f"Added worker: {data['name']}")
     return jsonify({"status": "success"})
 
 @app.route("/delete-worker/<int:worker_id>", methods=["DELETE"])
@@ -237,13 +255,13 @@ def delete_worker(worker_id):
     if not company:
         return jsonify({"status": "error"}), 401
     conn = get_db()
-    # Make sure worker belongs to this company
     worker = conn.execute(
-        "SELECT id FROM workers WHERE id=? AND company_id=?", (worker_id, company["id"])
+        "SELECT id, name FROM workers WHERE id=? AND company_id=?", (worker_id, company["id"])
     ).fetchone()
     if not worker:
         conn.close()
         return jsonify({"status": "error"}), 403
+    log_action(company["id"], "DELETE_WORKER", f"Deleted worker: {worker['name']}")
     conn.execute("DELETE FROM availability WHERE worker_id=?", (worker_id,))
     conn.execute("DELETE FROM worker_roles WHERE worker_id=?", (worker_id,))
     conn.execute("DELETE FROM workers WHERE id=?", (worker_id,))
@@ -253,51 +271,47 @@ def delete_worker(worker_id):
 
 @app.route('/edit-worker/<int:worker_id>', methods=['PUT'])
 def edit_worker(worker_id):
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    conn = get_db()
-    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    company = auth_required()
     if not company:
-        conn.close()
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
 
-    # Verify ownership
-    worker = conn.execute('SELECT * FROM workers WHERE id = ? AND company_id = ?', (worker_id, company['id'])).fetchone()
+    conn = get_db()
+    worker = conn.execute(
+        'SELECT * FROM workers WHERE id = ? AND company_id = ?', (worker_id, company['id'])
+    ).fetchone()
     if not worker:
         conn.close()
         return jsonify({'status': 'error', 'message': 'Worker not found'}), 404
 
     data = request.json
-    name       = data.get('name', '').strip()
-    max_hours  = data.get('max_hours', 40)
-    overtime   = data.get('overtime', 'no')
+    name         = data.get('name', '').strip()
+    max_hours    = data.get('max_hours', 40)
+    overtime     = data.get('overtime', 'no')
     availability = data.get('availability', [])
-    role_ids   = data.get('roles', [])
+    role_ids     = data.get('roles', [])
 
     if not name:
         conn.close()
         return jsonify({'status': 'error', 'message': 'Name is required'}), 400
 
-    # Update worker basic info
     conn.execute(
         'UPDATE workers SET name = ?, max_hours = ?, overtime = ? WHERE id = ?',
         (name, max_hours, overtime, worker_id)
     )
-
-    # Replace availability
     conn.execute('DELETE FROM availability WHERE worker_id = ?', (worker_id,))
     for day in availability:
         conn.execute('INSERT INTO availability (worker_id, day) VALUES (?, ?)', (worker_id, day))
-
-    # Replace roles
     conn.execute('DELETE FROM worker_roles WHERE worker_id = ?', (worker_id,))
     for role_id in role_ids:
-        # Verify role belongs to this company
-        role = conn.execute('SELECT * FROM roles WHERE id = ? AND company_id = ?', (role_id, company['id'])).fetchone()
+        role = conn.execute(
+            'SELECT * FROM roles WHERE id = ? AND company_id = ?', (role_id, company['id'])
+        ).fetchone()
         if role:
             conn.execute('INSERT INTO worker_roles (worker_id, role_id) VALUES (?, ?)', (worker_id, role_id))
 
     conn.commit()
     conn.close()
+    log_action(company["id"], "EDIT_WORKER", f"Edited worker: {name}")
     return jsonify({'status': 'success', 'message': 'Worker updated'})
 
 # ──────────────────────────────────────────────
@@ -324,11 +338,11 @@ def generate_schedule():
     fmt = "%H:%M"
 
     for shift in shifts:
-        day = shift["day"]
-        start = shift["start_time"]
-        end = shift["end_time"]
-        role_id = shift["role_id"]
-        needed = int(shift["workers_needed"])
+        day      = shift["day"]
+        start    = shift["start_time"]
+        end      = shift["end_time"]
+        role_id  = shift["role_id"]
+        needed   = int(shift["workers_needed"])
 
         try:
             shift_hours = (datetime.strptime(end, fmt) - datetime.strptime(start, fmt)).seconds / 3600
@@ -360,6 +374,7 @@ def generate_schedule():
 
     conn.commit()
     conn.close()
+    log_action(company["id"], "GENERATE_SCHEDULE", f"Generated {len(assigned)} shift assignments")
     return jsonify({"status": "success", "assigned": assigned})
 
 @app.route("/schedule", methods=["GET"])
@@ -369,7 +384,7 @@ def get_schedule():
         return jsonify({"status": "error"}), 401
     conn = get_db()
     rows = conn.execute("""
-        SELECT s.day, s.start_time, s.end_time, w.name as worker, r.name as role
+        SELECT s.id, s.day, s.start_time, s.end_time, w.name as worker, r.name as role
         FROM schedule s
         JOIN workers w ON s.worker_id = w.id
         LEFT JOIN roles r ON s.role_id = r.id
@@ -381,41 +396,50 @@ def get_schedule():
 
 @app.route('/schedule', methods=['DELETE'])
 def clear_schedule():
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    conn = get_db()
-    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    company = auth_required()
     if not company:
-        conn.close()
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
-
+    conn = get_db()
     conn.execute('DELETE FROM schedule WHERE company_id = ?', (company['id'],))
     conn.commit()
     conn.close()
+    log_action(company["id"], "CLEAR_SCHEDULE", "Cleared all shifts")
     return jsonify({'status': 'success', 'message': 'Schedule cleared'})
-
 
 @app.route('/schedule/<int:shift_id>', methods=['DELETE'])
 def delete_shift(shift_id):
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    conn = get_db()
-    company = conn.execute('SELECT * FROM companies WHERE token = ?', (token,)).fetchone()
+    company = auth_required()
     if not company:
-        conn.close()
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
-
-    # Verify ownership before deleting
+    conn = get_db()
     shift = conn.execute(
-        'SELECT * FROM schedule WHERE id = ? AND company_id = ?',
-        (shift_id, company['id'])
+        'SELECT * FROM schedule WHERE id = ? AND company_id = ?', (shift_id, company['id'])
     ).fetchone()
     if not shift:
         conn.close()
         return jsonify({'status': 'error', 'message': 'Shift not found'}), 404
-
     conn.execute('DELETE FROM schedule WHERE id = ?', (shift_id,))
     conn.commit()
     conn.close()
+    log_action(company["id"], "DELETE_SHIFT", f"Deleted shift ID: {shift_id}")
     return jsonify({'status': 'success', 'message': 'Shift deleted'})
+
+# ──────────────────────────────────────────────
+# AUDIT LOG
+# ──────────────────────────────────────────────
+
+@app.route('/audit-log', methods=['GET'])
+def get_audit_log():
+    company = auth_required()
+    if not company:
+        return jsonify({'status': 'error'}), 401
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, action, detail, timestamp FROM audit_log WHERE company_id = ? ORDER BY timestamp DESC LIMIT 200",
+        (company['id'],)
+    ).fetchall()
+    conn.close()
+    return jsonify({'logs': [dict(r) for r in rows]})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

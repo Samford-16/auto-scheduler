@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Worker — A-Schedule</title>
+  <title>Add Worker — A-Schedule</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -19,6 +19,7 @@
         <span class="sidebar-section">Account</span>
         <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
         <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
+        <a href="audit-log.html" class="nav-item" data-page="audit"><span class="icon">🔍</span> Audit Log</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-company">
@@ -32,8 +33,8 @@
     <main class="main-content">
       <div class="page-header">
         <div>
-          <h1>Edit Worker</h1>
-          <p class="subtitle">Update this employee's details, availability, and roles.</p>
+          <h1>Add Worker</h1>
+          <p class="subtitle">Enter the employee's details, availability, and assigned roles.</p>
         </div>
         <a href="dashboard.html" class="btn btn-ghost">← Back</a>
       </div>
@@ -41,7 +42,7 @@
       <div style="max-width:600px">
         <div class="card">
           <div class="card-title-lg">Basic Info</div>
-          <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="e.g. Jamie Smith"></div>
+          <div class="form-group"><label>Full Name</label><input type="text" id="name" placeholder="e.g. Jamie Smith" autofocus></div>
           <div class="form-row">
             <div class="form-group"><label>Max Hours / Week</label><input type="number" id="hours" placeholder="40" min="1" max="80"></div>
             <div class="form-group"><label>Overtime Allowed</label><select id="overtime"><option value="no">No</option><option value="yes">Yes</option></select></div>
@@ -66,29 +67,18 @@
           <div class="roles-grid" id="roles-grid"><span class="no-roles">Loading...</span></div>
         </div>
 
-        <button class="btn btn-primary btn-full" onclick="saveWorker()">Save Changes</button>
+        <button class="btn btn-primary btn-full" onclick="addWorker()">Add Worker</button>
       </div>
     </main>
   </div>
 
-  <div class="toast" id="toast"></div>
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
     initSidebar("dashboard");
 
-    const params = new URLSearchParams(window.location.search);
-    const workerId = params.get("id");
-    if (!workerId) window.location.href = "dashboard.html";
-
     const selectedDays = new Set();
     const selectedRoles = new Set();
-
-    function showToast(msg, type = "success") {
-      const t = document.getElementById("toast");
-      t.textContent = msg; t.className = `toast ${type} show`;
-      setTimeout(() => t.className = "toast", 3000);
-    }
 
     function toggleDay(el, day) {
       if (selectedDays.has(day)) { selectedDays.delete(day); el.classList.remove("selected"); }
@@ -99,59 +89,23 @@
       else { selectedRoles.add(id); el.classList.add("selected"); }
     }
 
-    // Load worker + roles in parallel
-    Promise.all([
-      fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()),
-      fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json())
-    ]).then(([wd, rd]) => {
-      const worker = (wd.workers || []).find(w => w.id == workerId);
-      if (!worker) { alert("Worker not found."); window.location.href = "dashboard.html"; return; }
-
-      // Pre-fill basic info
-      document.getElementById("name").value = worker.name;
-      document.getElementById("hours").value = worker.max_hours;
-      document.getElementById("overtime").value = worker.overtime;
-
-      // Pre-select availability days
-      const dayMap = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
-      document.querySelectorAll(".day-btn").forEach(btn => {
-        const fullDay = Object.entries(dayMap).find(([k]) => btn.textContent === k)?.[1];
-        if (fullDay && worker.availability.includes(fullDay)) {
-          selectedDays.add(fullDay);
-          btn.classList.add("selected");
-        }
-      });
-
-      // Build roles grid and pre-select
-      const workerRoleIds = new Set(worker.roles.map(r => r.id));
+    fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       const grid = document.getElementById("roles-grid");
-      if (!rd.roles || !rd.roles.length) {
-        grid.innerHTML = `<span class="no-roles">No roles yet. <a href="setup.html">Add roles in Setup →</a></span>`;
-        return;
-      }
-      grid.innerHTML = rd.roles.map(r => `<div class="role-btn${workerRoleIds.has(r.id) ? " selected" : ""}" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("");
-      workerRoleIds.forEach(id => selectedRoles.add(id));
+      grid.innerHTML = data.roles && data.roles.length
+        ? data.roles.map(r => `<div class="role-btn" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("")
+        : `<span class="no-roles">No roles yet. <a href="setup.html">Add roles in Setup →</a></span>`;
     });
 
-    function saveWorker() {
+    function addWorker() {
       const name = document.getElementById("name").value.trim();
       const hours = document.getElementById("hours").value;
       const overtime = document.getElementById("overtime").value;
-      if (!name || !hours) return showToast("Please fill in name and hours", "error");
-      if (!selectedDays.size) return showToast("Select at least one available day", "error");
-
-      fetch(`${API}/edit-worker/${workerId}`, {
-        method: "PUT",
-        headers: authHeaders(),
+      if (!name || !hours) return alert("Please enter name and max hours.");
+      if (!selectedDays.size) return alert("Please select at least one available day.");
+      fetch(`${API}/add-worker`, {
+        method: "POST", headers: authHeaders(),
         body: JSON.stringify({ name, max_hours: parseInt(hours), overtime, availability: [...selectedDays], roles: [...selectedRoles] })
-      }).then(r => r.json()).then(data => {
-        if (data.status === "success") {
-          showToast("Worker updated!");
-          setTimeout(() => window.location.href = "dashboard.html", 1000);
-        } else {
-          showToast(data.message || "Update failed", "error");
-        }
-      });
+      }).then(() => window.location.href = "dashboard.html");
     }
   </script>
 </body>
