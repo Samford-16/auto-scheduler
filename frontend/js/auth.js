@@ -27,6 +27,16 @@ function checkSession() {
   }
 }
 
+// Immediately block page render if session is expired
+(function() {
+    if (getToken() && isSessionExpired()) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("company");
+        localStorage.removeItem("login_time");
+        window.location.href = "login.html?reason=expired";
+    }
+})();
+
 checkSession();
 setInterval(checkSession, 60 * 1000);
 
