@@ -9,6 +9,16 @@ app = Flask(__name__)
 CORS(app)
 init_db()
 
+from flask import send_from_directory
+
+@app.route('/')
+def index():
+    return send_from_directory('/var/www/html/frontend', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('/var/www/html/frontend', filename)
+
 # ──────────────────────────────────────────────
 # AUTH HELPERS
 # ──────────────────────────────────────────────
