@@ -383,6 +383,23 @@ def generate_schedule():
     log_action(company["id"], "GENERATE_SCHEDULE", f"Generated {len(assigned)} shift assignments ({len(unassigned)} slots unfilled)")
     return jsonify({"status": "success", "assigned": assigned, "unassigned": unassigned})
 
+@app.route("/reset-password", methods=["PUT"])
+def reset_password():
+    data = request.get_json()
+    email = data.get("email", "")
+    password = data.get("password", "")
+    if not email or not password:
+        return jsonify({"status": "error", "message": "Email and password required"}), 400
+    hashed = hash_password(password)
+    conn = get_db()
+    company = conn.execute("SELECT * FROM companies WHERE email=?", (email,)).fetchone()
+    if not company:
+        return jsonify({"status": "error", "message": "No account found with that email"}), 404
+    conn.execute("UPDATE companies SET password=? WHERE email=?", (hashed, email))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
 @app.route("/schedule/<int:shift_id>", methods=["PUT"])
 def edit_shift(shift_id):
     company = auth_required()
