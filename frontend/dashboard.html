@@ -38,7 +38,7 @@
         <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
       </div>
     </aside>
-
+ 
     <main class="main-content">
       <div class="page-header">
         <div>
@@ -47,7 +47,7 @@
         </div>
         <div style="display:flex;gap:0.5rem"><button class="btn btn-ghost" onclick="window.print()">🖨 Print Roster</button><a href="add-worker.html" class="btn btn-primary">+ Add Worker</a></div>
       </div>
-
+ 
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Total Workers</div><div class="stat-value accent" id="stat-workers">—</div></div>
         <div class="stat-card"><div class="stat-label">Overtime Eligible</div><div class="stat-value" id="stat-ot">—</div></div>
@@ -59,7 +59,7 @@
           <div class="stat-value" id="stat-conflicts">—</div>
         </div>
       </div>
-
+ 
       <!-- Conflict Warnings -->
       <div id="conflicts-section" style="display:none; margin-bottom:1.25rem">
         <div class="card" style="border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.04)">
@@ -70,7 +70,7 @@
           <div id="conflicts-list"></div>
         </div>
       </div>
-
+ 
       <div class="card-overflow">
         <div class="card-header"><div class="card-title">Team Roster</div></div>
         <div id="workers-container">
@@ -84,21 +84,20 @@
     </main>
   </div>
   <div class="toast" id="toast"></div>
-
+ 
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
     initSidebar("dashboard");
-
+ 
     function showToast(msg, type = "success") {
       const t = document.getElementById("toast");
       t.textContent = msg; t.className = `toast ${type} show`;
       setTimeout(() => t.className = "toast", 3000);
     }
-
+ 
     function checkConflicts(workers, schedule) {
       const conflicts = [];
-      // Tally scheduled hours per worker
       const hoursMap = {};
       schedule.forEach(s => {
         if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
@@ -117,7 +116,7 @@
       });
       return conflicts;
     }
-
+ 
     function saveNote(workerId, note) {
       fetch(`${API}/worker-note/${workerId}`, {
         method: "POST", headers: authHeaders(),
@@ -126,27 +125,27 @@
         if (d.status === "success") showToast("Note saved");
       });
     }
-
+ 
     function loadWorkers() {
       Promise.all([
-        fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()),
-        fetch(`${API}/schedule`, { headers: authHeaders() }).then(r => r.json())
+        fetch(`${API}/workers`, { headers: authHeaders(), cache: "no-store" }).then(r => r.json()),
+        fetch(`${API}/schedule`, { headers: authHeaders(), cache: "no-store" }).then(r => r.json())
       ]).then(([wd, sd]) => {
         const workers = wd.workers || [];
         const schedule = sd.schedule || [];
-
+ 
         const total = workers.length;
         const ot = workers.filter(w => w.overtime === "yes").length;
         const totalHrs = workers.reduce((s, w) => s + w.max_hours, 0);
         const avg = total ? Math.round(totalHrs / total) : 0;
         const roles = new Set(workers.flatMap(w => w.roles.map(r => r.name))).size;
-
+ 
         document.getElementById("stat-workers").textContent = total;
         document.getElementById("stat-ot").textContent = ot;
         document.getElementById("stat-hours").textContent = totalHrs;
         document.getElementById("stat-avg").textContent = avg ? `${avg}h` : "—";
         document.getElementById("stat-roles").textContent = roles;
-
+ 
         const conflicts = checkConflicts(workers, schedule);
         const conflEl = document.getElementById("stat-conflicts");
         conflEl.textContent = conflicts.length;
@@ -156,11 +155,12 @@
           document.getElementById("conflicts-list").innerHTML = conflicts
             .map(c => `<div style="font-size:0.85rem;padding:0.5rem 0;border-bottom:1px solid var(--border);color:var(--text-secondary)">${c}</div>`)
             .join("");
+        } else {
+          document.getElementById("conflicts-section").style.display = "none";
         }
-
+ 
         if (!workers.length) return;
-
-        // Build hoursMap for the hours tracker bars
+ 
         const hoursMap = {};
         schedule.forEach(s => {
           if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
@@ -168,7 +168,7 @@
           const [eh, em] = s.end_time.split(":").map(Number);
           hoursMap[s.worker] += (eh + em / 60) - (sh + sm / 60);
         });
-
+ 
         const tbody = workers.map(w => `
           <tr>
             <td><strong>${w.name}</strong></td>
@@ -198,14 +198,15 @@
           <tbody>${tbody}</tbody></table>`;
       });
     }
-
+ 
     function deleteWorker(id, name) {
       if (!confirm(`Remove ${name}?`)) return;
       fetch(`${API}/delete-worker/${id}`, { method: "DELETE", headers: authHeaders() })
         .then(() => { showToast(`${name} removed`); loadWorkers(); });
     }
-
+ 
     loadWorkers();
   </script>
 </body>
 </html>
+ 
