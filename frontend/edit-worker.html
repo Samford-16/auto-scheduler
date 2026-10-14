@@ -53,13 +53,13 @@
         <div class="card">
           <div class="card-title-lg">Availability</div>
           <div class="days-grid">
-            <div class="day-btn" onclick="toggleDay(this,'Monday')">Mon</div>
-            <div class="day-btn" onclick="toggleDay(this,'Tuesday')">Tue</div>
-            <div class="day-btn" onclick="toggleDay(this,'Wednesday')">Wed</div>
-            <div class="day-btn" onclick="toggleDay(this,'Thursday')">Thu</div>
-            <div class="day-btn" onclick="toggleDay(this,'Friday')">Fri</div>
-            <div class="day-btn" onclick="toggleDay(this,'Saturday')">Sat</div>
-            <div class="day-btn" onclick="toggleDay(this,'Sunday')">Sun</div>
+            <div class="day-btn" data-day="Monday" onclick="toggleDay(this,'Monday')">Mon</div>
+            <div class="day-btn" data-day="Tuesday" onclick="toggleDay(this,'Tuesday')">Tue</div>
+            <div class="day-btn" data-day="Wednesday" onclick="toggleDay(this,'Wednesday')">Wed</div>
+            <div class="day-btn" data-day="Thursday" onclick="toggleDay(this,'Thursday')">Thu</div>
+            <div class="day-btn" data-day="Friday" onclick="toggleDay(this,'Friday')">Fri</div>
+            <div class="day-btn" data-day="Saturday" onclick="toggleDay(this,'Saturday')">Sat</div>
+            <div class="day-btn" data-day="Sunday" onclick="toggleDay(this,'Sunday')">Sun</div>
           </div>
         </div>
 
@@ -109,29 +109,24 @@
       const worker = (wd.workers || []).find(w => w.id == workerId);
       if (!worker) { alert("Worker not found."); window.location.href = "dashboard.html"; return; }
 
-      // Pre-fill basic info
       document.getElementById("name").value = worker.name;
       document.getElementById("hours").value = worker.max_hours;
       document.getElementById("overtime").value = worker.overtime;
 
-      // Pre-select availability days
-      const dayMap = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
       document.querySelectorAll(".day-btn").forEach(btn => {
-        const fullDay = Object.entries(dayMap).find(([k]) => btn.textContent === k)?.[1];
-        if (fullDay && worker.availability.includes(fullDay)) {
-          selectedDays.add(fullDay);
+        if (worker.availability.includes(btn.dataset.day)) {
+          selectedDays.add(btn.dataset.day);
           btn.classList.add("selected");
         }
       });
 
-      // Build roles grid and pre-select
       const workerRoleIds = new Set(worker.roles.map(r => r.id));
       const grid = document.getElementById("roles-grid");
       if (!rd.roles || !rd.roles.length) {
         grid.innerHTML = `<span class="no-roles">No roles yet. <a href="setup.html">Add roles in Setup →</a></span>`;
         return;
       }
-      grid.innerHTML = rd.roles.map(r => `<div class="role-btn${workerRoleIds.has(r.id) ? " selected" : ""}" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("");
+      grid.innerHTML = rd.roles.map(r => `<div class="role-btn${workerRoleIds.has(r.id) ? " selected" : ""}" onclick="toggleRole(this,${r.id})">${esc(r.name)}</div>`).join("");
       workerRoleIds.forEach(id => selectedRoles.add(id));
     });
 

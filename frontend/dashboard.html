@@ -38,7 +38,7 @@
         <button class="nav-item" onclick="logout()" style="color:#f87171"><span class="icon">🚪</span> Sign Out</button>
       </div>
     </aside>
- 
+
     <main class="main-content">
       <div class="page-header">
         <div>
@@ -47,7 +47,7 @@
         </div>
         <div style="display:flex;gap:0.5rem"><button class="btn btn-ghost" onclick="window.print()">🖨 Print Roster</button><a href="add-worker.html" class="btn btn-primary">+ Add Worker</a></div>
       </div>
- 
+
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Total Workers</div><div class="stat-value accent" id="stat-workers">—</div></div>
         <div class="stat-card"><div class="stat-label">Overtime Eligible</div><div class="stat-value" id="stat-ot">—</div></div>
@@ -59,7 +59,7 @@
           <div class="stat-value" id="stat-conflicts">—</div>
         </div>
       </div>
- 
+
       <!-- Conflict Warnings -->
       <div id="conflicts-section" style="display:none; margin-bottom:1.25rem">
         <div class="card" style="border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.04)">
@@ -70,7 +70,7 @@
           <div id="conflicts-list"></div>
         </div>
       </div>
- 
+
       <div class="card-overflow">
         <div class="card-header"><div class="card-title">Team Roster</div></div>
         <div id="workers-container">
@@ -84,39 +84,50 @@
     </main>
   </div>
   <div class="toast" id="toast"></div>
- 
+
   <script src="js/auth.js"></script>
   <script>
     if (!getToken()) window.location.href = "login.html";
     initSidebar("dashboard");
- 
+
+    let workersById = {};
+
     function showToast(msg, type = "success") {
       const t = document.getElementById("toast");
       t.textContent = msg; t.className = `toast ${type} show`;
       setTimeout(() => t.className = "toast", 3000);
     }
- 
-    function checkConflicts(workers, schedule) {
-      const conflicts = [];
-      const hoursMap = {};
+
+    function shiftHours(s) {
+      const [sh, sm] = s.start_time.split(":").map(Number);
+      const [eh, em] = s.end_time.split(":").map(Number);
+      return (eh + em / 60) - (sh + sm / 60);
+    }
+
+    function hoursByWorker(schedule) {
+      const map = {};
       schedule.forEach(s => {
-        if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
-        const [sh, sm] = s.start_time.split(":").map(Number);
-        const [eh, em] = s.end_time.split(":").map(Number);
-        hoursMap[s.worker] += (eh + em / 60) - (sh + sm / 60);
+        if (s.worker_id == null) return;
+        map[s.worker_id] = (map[s.worker_id] || 0) + shiftHours(s);
       });
+      return map;
+    }
+
+    function checkConflicts(workers, schedule, hoursMap) {
+      const conflicts = [];
       workers.forEach(w => {
-        const scheduled = hoursMap[w.name] || 0;
+        const name = `<strong>${esc(w.name)}</strong>`;
+        const scheduled = hoursMap[w.id] || 0;
         if (scheduled > w.max_hours && w.overtime !== "yes")
-          conflicts.push(`<strong>${w.name}</strong> is scheduled for ${scheduled.toFixed(1)} hrs but their max is ${w.max_hours} hrs and they are not overtime eligible.`);
-        schedule.filter(s => s.worker === w.name).forEach(s => {
+          conflicts.push(`${name} is scheduled for ${scheduled.toFixed(1)} hrs but their max is ${w.max_hours} hrs and they are not overtime eligible.`);
+        schedule.filter(s => s.worker_id === w.id).forEach(s => {
           if (!w.availability.includes(s.day))
-            conflicts.push(`<strong>${w.name}</strong> is scheduled on <strong>${s.day}</strong> but is not available that day.`);
+            conflicts.push(`${name} is scheduled on <strong>${esc(s.day)}</strong> but is not available that day.`);
         });
       });
       return conflicts;
     }
- 
+
     function saveNote(workerId, note) {
       fetch(`${API}/worker-note/${workerId}`, {
         method: "POST", headers: authHeaders(),
@@ -125,7 +136,7 @@
         if (d.status === "success") showToast("Note saved");
       });
     }
- 
+
     function loadWorkers() {
       Promise.all([
         fetch(`${API}/workers`, { headers: authHeaders(), cache: "no-store" }).then(r => r.json()),
@@ -133,20 +144,22 @@
       ]).then(([wd, sd]) => {
         const workers = wd.workers || [];
         const schedule = sd.schedule || [];
- 
+        workersById = Object.fromEntries(workers.map(w => [w.id, w]));
+        const hoursMap = hoursByWorker(schedule);
+
         const total = workers.length;
         const ot = workers.filter(w => w.overtime === "yes").length;
         const totalHrs = workers.reduce((s, w) => s + w.max_hours, 0);
         const avg = total ? Math.round(totalHrs / total) : 0;
         const roles = new Set(workers.flatMap(w => w.roles.map(r => r.name))).size;
- 
+
         document.getElementById("stat-workers").textContent = total;
         document.getElementById("stat-ot").textContent = ot;
         document.getElementById("stat-hours").textContent = totalHrs;
         document.getElementById("stat-avg").textContent = avg ? `${avg}h` : "—";
         document.getElementById("stat-roles").textContent = roles;
- 
-        const conflicts = checkConflicts(workers, schedule);
+
+        const conflicts = checkConflicts(workers, schedule, hoursMap);
         const conflEl = document.getElementById("stat-conflicts");
         conflEl.textContent = conflicts.length;
         conflEl.style.color = conflicts.length > 0 ? "#f87171" : "var(--text)";
@@ -158,55 +171,50 @@
         } else {
           document.getElementById("conflicts-section").style.display = "none";
         }
- 
+
         if (!workers.length) return;
- 
-        const hoursMap = {};
-        schedule.forEach(s => {
-          if (!hoursMap[s.worker]) hoursMap[s.worker] = 0;
-          const [sh, sm] = s.start_time.split(":").map(Number);
-          const [eh, em] = s.end_time.split(":").map(Number);
-          hoursMap[s.worker] += (eh + em / 60) - (sh + sm / 60);
-        });
- 
-        const tbody = workers.map(w => `
+
+        const tbody = workers.map(w => {
+          const used = hoursMap[w.id] || 0;
+          return `
           <tr>
-            <td><strong>${w.name}</strong></td>
+            <td><strong>${esc(w.name)}</strong></td>
             <td>${w.max_hours} hrs/wk</td>
             <td>
-              <div style="font-size:0.8rem;margin-bottom:0.25rem;color:var(--text-secondary)">${(hoursMap[w.name]||0).toFixed(1)} / ${w.max_hours}h</div>
+              <div style="font-size:0.8rem;margin-bottom:0.25rem;color:var(--text-secondary)">${used.toFixed(1)} / ${w.max_hours}h</div>
               <div style="background:var(--surface2);border-radius:99px;height:6px;width:80px;overflow:hidden">
-                <div style="height:100%;border-radius:99px;width:${Math.min(100,((hoursMap[w.name]||0)/w.max_hours)*100)}%;background:${(hoursMap[w.name]||0)>w.max_hours?'#f87171':'var(--accent)'}"></div>
+                <div style="height:100%;border-radius:99px;width:${Math.min(100, (used / w.max_hours) * 100)}%;background:${used > w.max_hours ? '#f87171' : 'var(--accent)'}"></div>
               </div>
             </td>
             <td><span class="badge ${w.overtime === 'yes' ? 'badge-yes' : 'badge-no'}">${w.overtime === 'yes' ? 'Yes' : 'No'}</span></td>
-            <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${r.name}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
-            <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${d}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td>${w.roles.length ? w.roles.map(r => `<span class="role-chip">${esc(r.name)}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
+            <td>${w.availability.length ? w.availability.map(d => `<span class="days-chip">${esc(d)}</span>`).join("") : '<span style="color:var(--text-muted)">—</span>'}</td>
             <td>
-              <input type="text" value="${w.notes||''}" placeholder="Add note..."
+              <input type="text" value="${esc(w.notes)}" placeholder="Add note..."
                 style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.3rem 0.5rem;border-radius:5px;font-size:0.78rem;font-family:inherit;width:140px;outline:none"
                 onblur="saveNote(${w.id}, this.value)"
                 onkeydown="if(event.key==='Enter')this.blur()">
             </td>
             <td>
               <a href="edit-worker.html?id=${w.id}" class="btn btn-ghost" style="font-size:0.8rem;padding:0.3rem 0.7rem;margin-right:0.25rem">Edit</a>
-              <button class="btn btn-danger-soft" onclick="deleteWorker(${w.id}, '${w.name}')">Remove</button>
+              <button class="btn btn-danger-soft" onclick="deleteWorker(${w.id})">Remove</button>
             </td>
-          </tr>`).join("");
+          </tr>`;
+        }).join("");
         document.getElementById("workers-container").innerHTML = `
           <table><thead><tr><th>Name</th><th>Max Hours</th><th>Scheduled</th><th>Overtime</th><th>Roles</th><th>Availability</th><th>Notes</th><th></th></tr></thead>
           <tbody>${tbody}</tbody></table>`;
       });
     }
- 
-    function deleteWorker(id, name) {
+
+    function deleteWorker(id) {
+      const name = workersById[id] ? workersById[id].name : "this worker";
       if (!confirm(`Remove ${name}?`)) return;
       fetch(`${API}/delete-worker/${id}`, { method: "DELETE", headers: authHeaders() })
         .then(() => { showToast(`${name} removed`); loadWorkers(); });
     }
- 
+
     loadWorkers();
   </script>
 </body>
 </html>
- 

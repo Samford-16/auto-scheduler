@@ -26,14 +26,10 @@
       padding: 0.25rem 0.6rem; border-radius: 5px;
       font-size: 0.72rem; font-weight: 600; white-space: nowrap;
     }
-    .action-ADD_WORKER     { background: rgba(52,211,153,0.12); color: #34d399; }
-    .action-DELETE_WORKER  { background: rgba(248,113,113,0.12); color: #f87171; }
-    .action-EDIT_WORKER    { background: rgba(251,191,36,0.12);  color: #fbbf24; }
-    .action-GENERATE_SCHEDULE { background: rgba(99,102,241,0.12); color: #818cf8; }
-    .action-CLEAR_SCHEDULE { background: rgba(248,113,113,0.12); color: #f87171; }
-    .action-DELETE_SHIFT   { background: rgba(248,113,113,0.12); color: #f87171; }
-    .action-ADD_ROLE       { background: rgba(52,211,153,0.12);  color: #34d399; }
-    .action-DELETE_ROLE    { background: rgba(248,113,113,0.12); color: #f87171; }
+    .tone-add    { background: rgba(52,211,153,0.12);  color: #34d399; }
+    .tone-delete { background: rgba(248,113,113,0.12); color: #f87171; }
+    .tone-edit   { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+    .tone-info   { background: rgba(99,102,241,0.12);  color: #818cf8; }
 
     .action-icon { font-size: 0.8rem; }
 
@@ -69,13 +65,14 @@
       <a href="index.html" class="sidebar-logo">A-Schedule</a>
       <nav class="sidebar-nav">
         <span class="sidebar-section">Workspace</span>
-        <a href="dashboard.html"  class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
-        <a href="schedule.html"   class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
-        <a href="calendar.html"   class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
+        <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
+        <a href="calendar.html" class="nav-item" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <a href="schedule-history.html" class="nav-item" data-page="history"><span class="icon">🗂</span> History</a>
         <span class="sidebar-section">Account</span>
-        <a href="setup.html"      class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
-        <a href="settings.html"   class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
-        <a href="audit-log.html"  class="nav-item active" data-page="audit"><span class="icon">🔍</span> Audit Log</a>
+        <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
+        <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
+        <a href="audit-log.html" class="nav-item active" data-page="audit"><span class="icon">🔍</span> Audit Log</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-company">
@@ -96,10 +93,11 @@
 
       <!-- Filters -->
       <div class="filter-bar">
-        <button class="filter-btn active" data-filter="ALL" onclick="setFilter('ALL', this)">All</button>
-        <button class="filter-btn" data-filter="WORKER"   onclick="setFilter('WORKER', this)">Workers</button>
-        <button class="filter-btn" data-filter="SCHEDULE" onclick="setFilter('SCHEDULE', this)">Schedule</button>
-        <button class="filter-btn" data-filter="ROLE"     onclick="setFilter('ROLE', this)">Roles</button>
+        <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
+        <button class="filter-btn" onclick="setFilter('WORKER', this)">Workers</button>
+        <button class="filter-btn" onclick="setFilter('SCHEDULE', this)">Schedule</button>
+        <button class="filter-btn" onclick="setFilter('ROLE', this)">Roles</button>
+        <button class="filter-btn" onclick="setFilter('TEMPLATE', this)">Templates</button>
         <input class="search-input" type="text" id="search-input" placeholder="Search logs..." oninput="applyFilters()">
         <span class="log-count" id="log-count"></span>
       </div>
@@ -119,14 +117,24 @@
     initSidebar("audit");
 
     const ACTION_META = {
-      ADD_WORKER:        { icon: "➕", label: "Add Worker" },
-      DELETE_WORKER:     { icon: "🗑", label: "Delete Worker" },
-      EDIT_WORKER:       { icon: "✏️", label: "Edit Worker" },
-      GENERATE_SCHEDULE: { icon: "⚡", label: "Generate Schedule" },
-      CLEAR_SCHEDULE:    { icon: "🧹", label: "Clear Schedule" },
-      DELETE_SHIFT:      { icon: "❌", label: "Delete Shift" },
-      ADD_ROLE:          { icon: "➕", label: "Add Role" },
-      DELETE_ROLE:       { icon: "🗑", label: "Delete Role" },
+      ADD_WORKER:        { icon: "➕", label: "Add Worker",        tone: "add" },
+      DELETE_WORKER:     { icon: "🗑", label: "Delete Worker",     tone: "delete" },
+      EDIT_WORKER:       { icon: "✏️", label: "Edit Worker",       tone: "edit" },
+      GENERATE_SCHEDULE: { icon: "⚡", label: "Generate Schedule", tone: "info" },
+      CLEAR_SCHEDULE:    { icon: "🧹", label: "Clear Schedule",    tone: "delete" },
+      EDIT_SHIFT:        { icon: "✏️", label: "Edit Shift",        tone: "edit" },
+      SWAP_SHIFT:        { icon: "⇄",  label: "Swap Shift",        tone: "edit" },
+      DELETE_SHIFT:      { icon: "❌", label: "Delete Shift",      tone: "delete" },
+      ADD_ROLE:          { icon: "➕", label: "Add Role",          tone: "add" },
+      DELETE_ROLE:       { icon: "🗑", label: "Delete Role",       tone: "delete" },
+      SAVE_TEMPLATE:     { icon: "📋", label: "Save Template",     tone: "add" },
+      DELETE_TEMPLATE:   { icon: "🗑", label: "Delete Template",   tone: "delete" },
+      CHANGE_PASSWORD:   { icon: "🔑", label: "Change Password",   tone: "info" },
+    };
+
+    // Shift actions belong under the Schedule filter
+    const FILTER_MATCH = {
+      SCHEDULE: a => a.includes("SCHEDULE") || a.includes("SHIFT"),
     };
 
     let allLogs = [];
@@ -144,7 +152,8 @@
       let filtered = allLogs;
 
       if (currentFilter !== "ALL") {
-        filtered = filtered.filter(l => l.action.includes(currentFilter));
+        const match = FILTER_MATCH[currentFilter] || (a => a.includes(currentFilter));
+        filtered = filtered.filter(l => match(l.action));
       }
       if (search) {
         filtered = filtered.filter(l =>
@@ -159,8 +168,7 @@
     }
 
     function formatTimestamp(ts) {
-      const d = new Date(ts + " UTC");
-      return d.toLocaleString("en-US", {
+      return new Date(ts.replace(" ", "T") + "Z").toLocaleString("en-US", {
         month: "short", day: "numeric", year: "numeric",
         hour: "numeric", minute: "2-digit", hour12: true
       });
@@ -170,24 +178,23 @@
       const body = document.getElementById("log-body");
       if (!logs.length) {
         body.innerHTML = `<div class="empty-state" style="padding:2.5rem">
-          <div class="empty-icon">🔍</div>
-          <div class="empty-title">No log entries found</div>
-          <div class="empty-sub">Actions you take will appear here.</div>
+          <div class="icon">🔍</div>
+          <p>No log entries found. Actions you take will appear here.</p>
         </div>`;
         return;
       }
 
       const rows = logs.map(l => {
-        const meta = ACTION_META[l.action] || { icon: "•", label: l.action };
+        const meta = ACTION_META[l.action] || { icon: "•", label: l.action, tone: "info" };
         return `<tr>
           <td class="ts">${formatTimestamp(l.timestamp)}</td>
           <td>
-            <span class="action-badge action-${l.action}">
+            <span class="action-badge tone-${meta.tone}">
               <span class="action-icon">${meta.icon}</span>
-              ${meta.label}
+              ${esc(meta.label)}
             </span>
           </td>
-          <td class="detail-text">${l.detail || '—'}</td>
+          <td class="detail-text">${esc(l.detail || "—")}</td>
         </tr>`;
       }).join("");
 
@@ -204,7 +211,6 @@
     fetch(`${API}/audit-log`, { headers: authHeaders() })
       .then(r => r.json()).then(data => {
         allLogs = data.logs || [];
-        document.getElementById("log-count").textContent = `${allLogs.length} entries`;
         applyFilters();
       }).catch(() => {
         document.getElementById("log-body").innerHTML =

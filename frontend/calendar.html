@@ -156,6 +156,7 @@
         <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="icon">👥</span> Workers</a>
         <a href="schedule.html" class="nav-item" data-page="schedule"><span class="icon">📅</span> Schedule</a>
         <a href="calendar.html" class="nav-item active" data-page="calendar"><span class="icon">🗓</span> Calendar</a>
+        <a href="schedule-history.html" class="nav-item" data-page="history"><span class="icon">🗂</span> History</a>
         <span class="sidebar-section">Account</span>
         <a href="setup.html" class="nav-item" data-page="setup"><span class="icon">⚙️</span> Setup</a>
         <a href="settings.html" class="nav-item" data-page="settings"><span class="icon">🎨</span> Settings</a>
@@ -219,6 +220,8 @@
     if (!getToken()) window.location.href = "login.html";
     initSidebar("calendar");
 
+    // The schedule is a repeating weekly template (shifts are stored by
+    // weekday, not by date), so every Monday shows the Monday shifts, etc.
     const DAYS_FULL  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
     const DAYS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const MONTHS     = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -283,9 +286,9 @@
     function shiftBlock(s, compact=false) {
       return `<div class="shift-block" onclick="openModal(${s.id})">
         <button class="s-del" onclick="event.stopPropagation();deleteShift(${s.id})">×</button>
-        <div class="s-name">${s.worker || "Unassigned"}</div>
-        ${!compact ? `<div class="s-time">${s.start_time}–${s.end_time}</div>` : ''}
-        ${s.role && !compact ? `<div class="s-time">${s.role}</div>` : ''}
+        <div class="s-name">${esc(s.worker || "Unassigned")}</div>
+        ${!compact ? `<div class="s-time">${esc(s.start_time)}–${esc(s.end_time)}</div>` : ''}
+        ${s.role && !compact ? `<div class="s-time">${esc(s.role)}</div>` : ''}
       </div>`;
     }
 
@@ -316,8 +319,8 @@
         const sorted = [...shifts].sort((a,b) => a.start_time.localeCompare(b.start_time));
         sorted.forEach(s => {
           html += `<div class="day-shift-card" onclick="openModal(${s.id})">
-            <div class="day-shift-time">${s.start_time} – ${s.end_time}</div>
-            <div><div class="day-shift-worker">${s.worker || "Unassigned"}</div><div class="day-shift-role">${s.role || 'No role'}</div></div>
+            <div class="day-shift-time">${esc(s.start_time)} – ${esc(s.end_time)}</div>
+            <div><div class="day-shift-worker">${esc(s.worker || "Unassigned")}</div><div class="day-shift-role">${esc(s.role || "No role")}</div></div>
             <div class="day-shift-del"><button class="btn btn-danger-soft" style="border:1px solid rgba(248,113,113,0.25)" onclick="event.stopPropagation();deleteShift(${s.id})">Remove</button></div>
           </div>`;
         });
@@ -374,17 +377,14 @@
       document.getElementById("period-label").textContent =
         `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
 
-      // Grid starts from Sunday of the first week
+      // Grid starts from Sunday of the first week and ends Saturday of the last week
       const gridStart = getWeekStart(ms);
-      // Grid ends Saturday of the last week
       const gridEnd   = addDays(getWeekStart(me), 6);
 
       let html = `<div class="cal-wrap"><div class="month-grid">`;
 
-      // Day name headers
       DAYS_SHORT.forEach(d => html += `<div class="month-day-header">${d}</div>`);
 
-      // Day cells
       let d = new Date(gridStart);
       while (d <= gridEnd) {
         const isCurrentMonth = d.getMonth() === cursor.getMonth();
@@ -415,11 +415,11 @@
       const s = allSchedule.find(x => x.id === id);
       if (!s) return;
       document.getElementById("modal-body").innerHTML = `
-        <div class="modal-row"><span>Worker</span><strong>${s.worker || "Unassigned"}</strong></div>
-        <div class="modal-row"><span>Day</span><strong>${s.day}</strong></div>
-        <div class="modal-row"><span>Start</span><strong>${s.start_time}</strong></div>
-        <div class="modal-row"><span>End</span><strong>${s.end_time}</strong></div>
-        <div class="modal-row"><span>Role</span><strong>${s.role || '—'}</strong></div>`;
+        <div class="modal-row"><span>Worker</span><strong>${esc(s.worker || "Unassigned")}</strong></div>
+        <div class="modal-row"><span>Day</span><strong>${esc(s.day)}</strong></div>
+        <div class="modal-row"><span>Start</span><strong>${esc(s.start_time)}</strong></div>
+        <div class="modal-row"><span>End</span><strong>${esc(s.end_time)}</strong></div>
+        <div class="modal-row"><span>Role</span><strong>${esc(s.role || "—")}</strong></div>`;
       document.getElementById("modal-del-btn").onclick = () => deleteShift(id, true);
       document.getElementById("modal").style.display = "flex";
     }

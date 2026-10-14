@@ -93,7 +93,7 @@
     fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       const grid = document.getElementById("roles-grid");
       grid.innerHTML = data.roles && data.roles.length
-        ? data.roles.map(r => `<div class="role-btn" onclick="toggleRole(this,${r.id})">${r.name}</div>`).join("")
+        ? data.roles.map(r => `<div class="role-btn" onclick="toggleRole(this,${r.id})">${esc(r.name)}</div>`).join("")
         : `<span class="no-roles">No roles yet. <a href="setup.html">Add roles in Setup →</a></span>`;
     });
 

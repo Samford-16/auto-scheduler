@@ -33,6 +33,8 @@
     }
     .modal-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
     .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; justify-content: flex-end; }
+    .modal-field { width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none }
+    .modal-label { font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem }
   </style>
 </head>
 <body>
@@ -117,7 +119,7 @@
       <div class="modal-title">Schedule Templates</div>
       <div id="template-list" style="margin-bottom:1rem;max-height:200px;overflow-y:auto"></div>
       <div style="display:flex;gap:0.5rem;align-items:center">
-        <input type="text" id="template-name-input" placeholder="Template name..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+        <input type="text" id="template-name-input" placeholder="Template name..." class="modal-field" style="flex:1">
         <button class="btn btn-primary" onclick="saveTemplate()" style="white-space:nowrap">Save Current</button>
       </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="document.getElementById('template-modal').style.display='none'">Close</button></div>
@@ -130,22 +132,22 @@
       <div class="modal-title">Edit Shift</div>
       <div style="display:flex;flex-direction:column;gap:0.75rem">
         <div>
-          <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Worker</label>
-          <select id="edit-worker-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none"></select>
+          <label class="modal-label">Worker</label>
+          <select id="edit-worker-select" class="modal-field"></select>
         </div>
         <div style="display:flex;gap:0.75rem">
           <div style="flex:1">
-            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Start</label>
-            <input type="time" id="edit-start" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+            <label class="modal-label">Start</label>
+            <input type="time" id="edit-start" class="modal-field">
           </div>
           <div style="flex:1">
-            <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">End</label>
-            <input type="time" id="edit-end" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none">
+            <label class="modal-label">End</label>
+            <input type="time" id="edit-end" class="modal-field">
           </div>
         </div>
         <div>
-          <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.3rem">Role</label>
-          <select id="edit-role-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.75rem;border-radius:6px;font-family:inherit;font-size:0.85rem;outline:none"></select>
+          <label class="modal-label">Role</label>
+          <select id="edit-role-select" class="modal-field"></select>
         </div>
       </div>
       <div class="modal-actions">
@@ -174,6 +176,7 @@
 
     let roles = [];
     let currentSchedule = [];
+    let swapCandidates = [];
     const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
     function showToast(msg, type = "success") {
@@ -182,49 +185,70 @@
       setTimeout(() => t.className = "toast", 3000);
     }
 
+    function findShift(id) { return currentSchedule.find(s => s.id === id); }
+
     fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
       roles = data.roles || [];
       addShiftRow();
       loadExistingSchedule();
     });
 
-    function roleOptions() { return roles.length ? roles.map(r => `<option value="${r.id}">${r.name}</option>`).join("") : '<option value="">No roles</option>'; }
-    function dayOptions() { return DAYS.map(d => `<option value="${d}">${d}</option>`).join(""); }
+    function roleOptions(selectedId) {
+      if (!roles.length) return '<option value="">No roles</option>';
+      return roles.map(r => `<option value="${r.id}"${r.id == selectedId ? " selected" : ""}>${esc(r.name)}</option>`).join("");
+    }
+    function dayOptions(selectedDay) {
+      return DAYS.map(d => `<option value="${d}"${d === selectedDay ? " selected" : ""}>${d}</option>`).join("");
+    }
 
-    function addShiftRow() {
+    function addShiftRow(shift = {}) {
       const row = document.createElement("div");
       row.className = "shift-row";
       row.innerHTML = `
-        <select class="s-day">${dayOptions()}</select>
-        <input type="time" class="s-start" value="09:00">
-        <input type="time" class="s-end" value="17:00">
-        <select class="s-role">${roleOptions()}</select>
-        <input type="number" class="s-needed" value="1" min="1" max="20">
+        <select class="s-day">${dayOptions(shift.day)}</select>
+        <input type="time" class="s-start" value="${esc(shift.start_time || "09:00")}">
+        <input type="time" class="s-end" value="${esc(shift.end_time || "17:00")}">
+        <select class="s-role">${roleOptions(shift.role_id)}</select>
+        <input type="number" class="s-needed" value="${parseInt(shift.workers_needed) || 1}" min="1" max="20">
         <button class="btn-icon" onclick="this.parentElement.remove()">×</button>`;
       document.getElementById("shifts-builder").appendChild(row);
     }
 
-    function generateSchedule() {
-      const rows = document.querySelectorAll(".shift-row");
-      const shifts = [...rows].map(row => ({
+    function readShiftRows() {
+      return [...document.querySelectorAll(".shift-row")].map(row => ({
         day: row.querySelector(".s-day").value,
         start_time: row.querySelector(".s-start").value,
         end_time: row.querySelector(".s-end").value,
         role_id: row.querySelector(".s-role").value,
         workers_needed: row.querySelector(".s-needed").value
       }));
+    }
+
+    function reportResult(data, verb) {
+      const unfilled = data.unassigned || [];
+      if (unfilled.length > 0) {
+        showToast(`${verb} with ${unfilled.length} slot(s) unfilled due to worker shortage`, "error");
+      } else {
+        showToast(`${verb}. All slots filled ✓`);
+      }
+      loadExistingSchedule();
+    }
+
+    function generateSchedule() {
+      const shifts = readShiftRows();
+      if (!shifts.length) { showToast("Add at least one shift", "error"); return; }
       fetch(`${API}/generate-schedule`, {
         method: "POST", headers: authHeaders(), body: JSON.stringify({ shifts })
-      }).then(r => r.json()).then(data => {
-        const unfilled = data.unassigned || [];
-        if (unfilled.length > 0) {
-          const total = unfilled.reduce((sum, u) => sum + (u.needed - u.filled), 0);
-          showToast(`Schedule generated — ${total} slot(s) unfilled due to worker shortage`, "error");
-        } else {
-          showToast("Schedule generated! All slots filled ✓");
-        }
-        loadExistingSchedule();
-      });
+      }).then(r => r.json()).then(data => reportResult(data, "Schedule generated"));
+    }
+
+    function refreshSchedule() {
+      if (!confirm("Rerun the last schedule with the current worker pool? This will replace the current schedule.")) return;
+      fetch(`${API}/refresh-schedule`, { method: "POST", headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          if (data.status === "error") { showToast(data.message || "No previous schedule to refresh", "error"); return; }
+          reportResult(data, "Schedule refreshed");
+        });
     }
 
     function clearSchedule() {
@@ -253,6 +277,12 @@
         });
     }
 
+    function shiftHours(s) {
+      const [sh, sm] = s.start_time.split(":").map(Number);
+      const [eh, em] = s.end_time.split(":").map(Number);
+      return (eh + em / 60) - (sh + sm / 60);
+    }
+
     function loadExistingSchedule() {
       fetch(`${API}/schedule`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         currentSchedule = data.schedule || [];
@@ -260,34 +290,29 @@
         if (!currentSchedule.length) { card.style.display = "none"; return; }
         card.style.display = "block";
 
-        // Stats
-        const uniqueWorkers = new Set(currentSchedule.map(s => s.worker)).size;
+        // Stats (unassigned slots are not counted as filled)
+        const filled = currentSchedule.filter(s => s.worker_id != null);
+        const uniqueWorkers = new Set(filled.map(s => s.worker_id)).size;
         const uniqueDays = new Set(currentSchedule.map(s => s.day)).size;
-        let totalHours = 0;
-        currentSchedule.forEach(s => {
-          const [sh, sm] = s.start_time.split(":").map(Number);
-          const [eh, em] = s.end_time.split(":").map(Number);
-          totalHours += (eh + em/60) - (sh + sm/60);
-        });
-        document.getElementById("sched-stat-filled").textContent = currentSchedule.length;
+        const totalHours = filled.reduce((sum, s) => sum + shiftHours(s), 0);
+        document.getElementById("sched-stat-filled").textContent = `${filled.length} / ${currentSchedule.length}`;
         document.getElementById("sched-stat-workers").textContent = uniqueWorkers;
         document.getElementById("sched-stat-days").textContent = uniqueDays;
         document.getElementById("sched-stat-hours").textContent = `${totalHours.toFixed(1)}h`;
 
-        // Group by day then by time slot
+        // Group by day, then by time slot and role
         const byDay = {};
-        currentSchedule.forEach(s => { if (!byDay[s.day]) byDay[s.day] = []; byDay[s.day].push(s); });
+        currentSchedule.forEach(s => { (byDay[s.day] = byDay[s.day] || []).push(s); });
 
         let html = "";
         for (const day of DAYS) {
           if (!byDay[day]) continue;
-          const shifts = byDay[day].sort((a,b) => a.start_time.localeCompare(b.start_time));
+          const shifts = byDay[day].sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-          // Group by time slot (same start+end = same slot)
           const slots = {};
           shifts.forEach(s => {
-            const key = `${s.start_time}-${s.end_time}-${s.role||''}`;
-            if (!slots[key]) slots[key] = { start: s.start_time, end: s.end_time, role: s.role, workers: [], needed: 0 };
+            const key = `${s.start_time}-${s.end_time}-${s.role_id || ""}`;
+            if (!slots[key]) slots[key] = { start: s.start_time, end: s.end_time, role: s.role, workers: [] };
             slots[key].workers.push(s);
           });
 
@@ -297,20 +322,20 @@
           for (const slot of Object.values(slots)) {
             html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;overflow:hidden">
               <div style="display:flex;align-items:center;gap:1rem;padding:0.55rem 0.85rem;border-bottom:1px solid var(--border);background:var(--surface3,var(--surface2))">
-                <span style="font-size:0.82rem;font-weight:600;color:var(--text)">${slot.start} – ${slot.end}</span>
-                ${slot.role ? `<span class="role-chip">${slot.role}</span>` : ''}
-                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${slot.workers.length} worker${slot.workers.length>1?'s':''}</span>
+                <span style="font-size:0.82rem;font-weight:600;color:var(--text)">${esc(slot.start)} – ${esc(slot.end)}</span>
+                ${slot.role ? `<span class="role-chip">${esc(slot.role)}</span>` : ""}
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto">${slot.workers.length} worker${slot.workers.length > 1 ? "s" : ""}</span>
               </div>`;
             slot.workers.forEach(s => {
               const isBlank = !s.worker;
-              html += `<div id="shift-row-${s.id}" style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);${isBlank ? 'background:rgba(248,113,113,0.04)' : ''}">
+              html += `<div id="shift-row-${s.id}" style="display:flex;align-items:center;padding:0.5rem 0.85rem;border-bottom:1px solid var(--border);${isBlank ? "background:rgba(248,113,113,0.04)" : ""}">
                 ${isBlank
-                  ? `<span style="flex:1;font-style:italic;color:#f87171;font-size:0.85rem">⚠ Unassigned — click Edit to fill</span>`
-                  : `<span style="font-weight:500;color:var(--text);flex:1">${s.worker}</span>`
+                  ? `<span style="flex:1;font-style:italic;color:#f87171;font-size:0.85rem">⚠ Unassigned. Click Edit to fill</span>`
+                  : `<span style="font-weight:500;color:var(--text);flex:1">${esc(s.worker)}</span>`
                 }
                 <div class="no-print" style="display:flex;gap:0.4rem">
-                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem${isBlank ? ';border-color:rgba(248,113,113,0.4);color:#f87171' : ''}" onclick="openEditModal(${s.id},'${s.worker||''}','${s.day}','${s.start_time}','${s.end_time}',${s.role_id||0},'${s.role||''}')">✏ Edit</button>
-                  ${!isBlank ? `<button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openSwapModal(${s.id},'${s.worker}','${s.day}')">⇄ Swap</button>` : ''}
+                  <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem${isBlank ? ";border-color:rgba(248,113,113,0.4);color:#f87171" : ""}" onclick="openEditModal(${s.id})">✏ Edit</button>
+                  ${!isBlank ? `<button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="openSwapModal(${s.id})">⇄ Swap</button>` : ""}
                   <button class="btn btn-danger-soft" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="deleteShift(${s.id})">Remove</button>
                 </div>
               </div>`;
@@ -334,16 +359,16 @@
       const rows = [["Day","Worker","Start","End","Role"]];
       for (const day of DAYS) {
         currentSchedule.filter(s => s.day === day).forEach(s => {
-          rows.push([s.day, s.worker, s.start_time, s.end_time, s.role || ""]);
+          rows.push([s.day, s.worker || "Unassigned", s.start_time, s.end_time, s.role || ""]);
         });
       }
-      const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const company = getCompany();
       a.href = url;
-      a.download = `${company ? company.name.replace(/\s+/g,"-") : "schedule"}-schedule.csv`;
+      a.download = `${company ? company.name.replace(/[^\w-]+/g, "-") : "schedule"}-schedule.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -352,26 +377,22 @@
     // ── EDIT SHIFT ─────────────────────────────────────
     let editShiftId = null;
 
-    function openEditModal(shiftId, workerName, day, start, end, roleId, roleName) {
+    function openEditModal(shiftId) {
+      const shift = findShift(shiftId);
+      if (!shift) return;
       editShiftId = shiftId;
-      document.getElementById("edit-start").value = start;
-      document.getElementById("edit-end").value = end;
+      document.getElementById("edit-start").value = shift.start_time;
+      document.getElementById("edit-end").value = shift.end_time;
 
-      // Populate worker dropdown
       fetch(`${API}/workers`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         const workers = data.workers || [];
         const sel = document.getElementById("edit-worker-select");
         sel.innerHTML = workers.map(w =>
-          `<option value="${w.id}" ${w.name === workerName ? "selected" : ""}>${w.name}</option>`
+          `<option value="${w.id}"${w.id === shift.worker_id ? " selected" : ""}>${esc(w.name)}</option>`
         ).join("");
       });
 
-      // Populate role dropdown
-      const roleSel = document.getElementById("edit-role-select");
-      roleSel.innerHTML = roles.map(r =>
-        `<option value="${r.id}" ${r.id == roleId ? "selected" : ""}>${r.name}</option>`
-      ).join("");
-
+      document.getElementById("edit-role-select").innerHTML = roleOptions(shift.role_id);
       document.getElementById("edit-modal").style.display = "flex";
     }
 
@@ -389,26 +410,12 @@
           showToast("Shift updated");
           document.getElementById("edit-modal").style.display = "none";
           loadExistingSchedule();
-        } else showToast("Failed to update shift", "error");
+        } else showToast(d.message || "Failed to update shift", "error");
       });
     }
 
     // ── TEMPLATES ──────────────────────────────────────
-    function refreshSchedule() {
-      if (!confirm("Rerun the last schedule with the current worker pool? This will replace the current schedule.")) return;
-      fetch(`${API}/refresh-schedule`, { method: "POST", headers: authHeaders() })
-        .then(r => r.json()).then(data => {
-          if (data.status === "error") { showToast(data.message || "No previous schedule to refresh", "error"); return; }
-          const unfilled = data.unassigned || [];
-          if (unfilled.length > 0) {
-            const total = unfilled.reduce((sum, u) => sum + (u.needed - u.filled), 0);
-            showToast(`Refreshed — ${total} slot(s) still unfilled`, "error");
-          } else {
-            showToast("Schedule refreshed! All slots filled ✓");
-          }
-          loadExistingSchedule();
-        });
-    }
+    let templates = [];
 
     function openTemplateModal() {
       loadTemplates();
@@ -417,7 +424,7 @@
 
     function loadTemplates() {
       fetch(`${API}/templates`, { headers: authHeaders() }).then(r => r.json()).then(data => {
-        const templates = data.templates || [];
+        templates = data.templates || [];
         const el = document.getElementById("template-list");
         if (!templates.length) {
           el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem">No templates saved yet.</p>';
@@ -425,7 +432,7 @@
         }
         el.innerHTML = templates.map(t => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:0.85rem;color:var(--text)">${t.name} <span style="color:var(--text-muted)">(${t.shifts.length} shifts)</span></span>
+            <span style="font-size:0.85rem;color:var(--text)">${esc(t.name)} <span style="color:var(--text-muted)">(${t.shifts.length} shifts)</span></span>
             <div style="display:flex;gap:0.4rem">
               <button class="btn btn-ghost" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="loadTemplate(${t.id})">Load</button>
               <button class="btn btn-danger-soft" style="font-size:0.75rem;padding:0.2rem 0.5rem" onclick="deleteTemplate(${t.id})">Delete</button>
@@ -437,14 +444,7 @@
     function saveTemplate() {
       const name = document.getElementById("template-name-input").value.trim();
       if (!name) { showToast("Enter a template name", "error"); return; }
-      const rows = document.querySelectorAll(".shift-row");
-      const shifts = [...rows].map(row => ({
-        day: row.querySelector(".s-day").value,
-        start_time: row.querySelector(".s-start").value,
-        end_time: row.querySelector(".s-end").value,
-        role_id: row.querySelector(".s-role").value,
-        workers_needed: row.querySelector(".s-needed").value
-      }));
+      const shifts = readShiftRows();
       if (!shifts.length) { showToast("Add shifts first", "error"); return; }
       fetch(`${API}/templates`, {
         method: "POST", headers: authHeaders(), body: JSON.stringify({ name, shifts })
@@ -455,28 +455,12 @@
     }
 
     function loadTemplate(id) {
-      // Clear immediately before fetch to prevent stale rows
+      const t = templates.find(x => x.id === id);
+      if (!t) return;
       document.getElementById("shifts-builder").innerHTML = "";
-      document.getElementById("schedule-card").style.display = "none";
-      fetch(`${API}/templates`, { headers: authHeaders() }).then(r => r.json()).then(data => {
-        const t = data.templates.find(x => x.id === id);
-        if (!t) return;
-        document.getElementById("shifts-builder").innerHTML = "";
-        t.shifts.forEach(s => {
-          const row = document.createElement("div");
-          row.className = "shift-row";
-          row.innerHTML = `
-            <select class="s-day">${DAYS.map(d => `<option value="${d}"${d===s.day?' selected':''}>${d}</option>`).join("")}</select>
-            <input type="time" class="s-start" value="${s.start_time}">
-            <input type="time" class="s-end" value="${s.end_time}">
-            <select class="s-role">${roles.map(r => `<option value="${r.id}"${r.id==s.role_id?' selected':''}>${r.name}</option>`).join("")}</select>
-            <input type="number" class="s-needed" value="${s.workers_needed}" min="1" max="20">
-            <button class="btn-icon" onclick="this.parentElement.remove()">×</button>`;
-          document.getElementById("shifts-builder").appendChild(row);
-        });
-        document.getElementById("template-modal").style.display = "none";
-        showToast(`Template "${t.name}" loaded`);
-      });
+      t.shifts.forEach(s => addShiftRow(s));
+      document.getElementById("template-modal").style.display = "none";
+      showToast(`Template "${t.name}" loaded`);
     }
 
     function deleteTemplate(id) {
@@ -489,33 +473,37 @@
     // ── SHIFT SWAP ─────────────────────────────────────
     let swapShiftId = null;
 
-    function openSwapModal(shiftId, workerName, day) {
+    function openSwapModal(shiftId) {
+      const shift = findShift(shiftId);
+      if (!shift) return;
       swapShiftId = shiftId;
-      document.getElementById("swap-desc").textContent = `Replace ${workerName} on ${day} with:`;
-      document.getElementById("swap-worker-list").innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">Loading...</p>';
+      document.getElementById("swap-desc").textContent = `Replace ${shift.worker} on ${shift.day} with:`;
+      const list = document.getElementById("swap-worker-list");
+      list.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">Loading...</p>';
       document.getElementById("swap-modal").style.display = "flex";
       fetch(`${API}/schedule/available-workers/${shiftId}`, { headers: authHeaders() })
         .then(r => r.json()).then(data => {
-          const workers = data.workers || [];
-          if (!workers.length) {
-            document.getElementById("swap-worker-list").innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">No other available workers for this shift.</p>';
+          swapCandidates = data.workers || [];
+          if (!swapCandidates.length) {
+            list.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted)">No other available workers for this shift.</p>';
             return;
           }
-          document.getElementById("swap-worker-list").innerHTML = workers.map(w =>
+          list.innerHTML = swapCandidates.map(w =>
             `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border)">
-              <span style="font-size:0.85rem;color:var(--text)">${w.name}</span>
-              <button class="btn btn-primary" style="font-size:0.78rem;padding:0.25rem 0.65rem" onclick="confirmSwap(${w.id},'${w.name}')">Assign</button>
+              <span style="font-size:0.85rem;color:var(--text)">${esc(w.name)}</span>
+              <button class="btn btn-primary" style="font-size:0.78rem;padding:0.25rem 0.65rem" onclick="confirmSwap(${w.id})">Assign</button>
             </div>`
           ).join("");
         });
     }
 
-    function confirmSwap(newWorkerId, newWorkerName) {
+    function confirmSwap(newWorkerId) {
+      const worker = swapCandidates.find(w => w.id === newWorkerId);
       fetch(`${API}/schedule/${swapShiftId}/swap`, {
         method: "POST", headers: authHeaders(), body: JSON.stringify({ worker_id: newWorkerId })
       }).then(r => r.json()).then(d => {
         if (d.status === "success") {
-          showToast(`Swapped to ${newWorkerName}`);
+          showToast(`Swapped to ${worker ? worker.name : "new worker"}`);
           document.getElementById("swap-modal").style.display = "none";
           loadExistingSchedule();
         } else showToast("Swap failed", "error");

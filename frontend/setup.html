@@ -78,22 +78,20 @@
       setTimeout(() => t.className = "toast", 3000);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch(`${API}/me`, { headers: authHeaders() }).then(r => r.json()).then(data => {
-        if (data.company) {
-          document.getElementById("company-name").value = data.company.name || "";
-          document.getElementById("open-time").value = data.company.open_time || "";
-          document.getElementById("close-time").value = data.company.close_time || "";
-        }
-      });
-      loadRoles();
+    fetch(`${API}/me`, { headers: authHeaders() }).then(r => r.json()).then(data => {
+      if (data.company) {
+        document.getElementById("company-name").value = data.company.name || "";
+        document.getElementById("open-time").value = data.company.open_time || "";
+        document.getElementById("close-time").value = data.company.close_time || "";
+      }
     });
+    loadRoles();
 
     function loadRoles() {
       fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         const list = document.getElementById("roles-list");
         list.innerHTML = data.roles.length
-          ? data.roles.map(r => `<div class="role-tag">${r.name}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("")
+          ? data.roles.map(r => `<div class="role-tag">${esc(r.name)}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("")
           : `<span style="color:var(--text-muted);font-size:0.85rem">No roles yet...</span>`;
       });
     }
@@ -108,8 +106,7 @@
           showToast("Saved!");
           const c = getCompany();
           localStorage.setItem("company", JSON.stringify({ ...c, name }));
-          document.getElementById("sidebar-company-name").textContent = name;
-          document.getElementById("sidebar-company-initial").textContent = name.charAt(0).toUpperCase();
+          initSidebar("setup");
         });
     }
 

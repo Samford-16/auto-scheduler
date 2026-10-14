@@ -24,7 +24,7 @@
     </div>
     <div class="form-group" style="margin-bottom:1.5rem">
       <label>Password</label>
-      <input type="password" id="password" placeholder="Min. 6 characters">
+      <input type="password" id="password" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter') signup()">
       <span class="hint">At least 6 characters</span>
     </div>
 
@@ -32,12 +32,9 @@
     <p class="footer-link">Already have an account? <a href="login.html">Sign in</a></p>
   </div>
 
+  <script src="js/auth.js"></script>
   <script>
-    const API = "http://34.28.196.192:5000";
-    const t = localStorage.getItem("theme") || "dark";
-    const a = localStorage.getItem("accent") || "emerald";
-    document.body.classList.add(`theme-${t}`, `accent-${a}`);
-    if (localStorage.getItem("token")) window.location.href = "dashboard.html";
+    if (getToken()) window.location.href = "dashboard.html";
 
     function signup() {
       const name = document.getElementById("company").value.trim();
@@ -54,6 +51,7 @@
         if (data.status === "success") {
           localStorage.setItem("token", data.token);
           localStorage.setItem("company", JSON.stringify(data.company));
+          setLoginTime();
           window.location.href = "onboarding.html";
         } else { err.textContent = data.message || "Signup failed."; err.style.display = "block"; }
       }).catch(() => { err.textContent = "Could not connect to server."; err.style.display = "block"; });

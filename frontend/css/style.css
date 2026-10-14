@@ -19,7 +19,7 @@ body.theme-light {
 /* --hue is set by JS. All accent + surface colors derive from it. */
 
 /* Dark tinted surfaces */
-body.theme-dark {
+body, body.theme-dark {
   --accent:         hsl(var(--hue), 65%, 55%);
   --accent-hover:   hsl(var(--hue), 65%, 45%);
   --accent-subtle:  hsla(var(--hue), 65%, 55%, 0.12);
@@ -241,11 +241,6 @@ tr:hover td { background: var(--surface2); }
 .theme-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-secondary); cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 500; transition: all 0.1s; }
 .theme-btn:hover { border-color: var(--text-muted); color: var(--text); }
 .theme-btn.active { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent-text); }
-.color-swatches { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; position: relative; }
-.swatch:hover { transform: scale(1.1); }
-.swatch.active { border-color: var(--text); }
-.swatch.active::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: white; font-weight: 700; }
 
 /* ─── Divider ───────────────────────────────────────── */
 .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }

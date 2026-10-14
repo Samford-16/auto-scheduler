@@ -1,10 +1,22 @@
-const API = "http://34.28.196.192:5000";
+// The Flask backend serves these pages, so API calls go to the same origin.
+// If you host the frontend separately, set this to the backend URL.
+const API = "";
 
 const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours in ms
 
 function getToken() { return localStorage.getItem("token"); }
 function getCompany() { const c = localStorage.getItem("company"); return c ? JSON.parse(c) : null; }
 function authHeaders() { return { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` }; }
+
+// Escape user-entered text before putting it into HTML.
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 // ─── Session Expiry ───────────────────────────────────
 function setLoginTime() {

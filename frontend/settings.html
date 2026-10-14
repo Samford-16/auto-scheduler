@@ -140,11 +140,8 @@
       localStorage.setItem("hue", hue);
       document.documentElement.style.setProperty("--hue", hue);
 
-      // Update thumb position
-      const pct = hue / 360;
-      thumb.style.left = `${pct * 100}%`;
+      thumb.style.left = `${(hue / 360) * 100}%`;
 
-      // Update preview
       const color = `hsl(${hue}, 65%, 55%)`;
       document.getElementById("preview-swatch").style.background = color;
       document.getElementById("preview-name").textContent = hueName(hue);
@@ -175,8 +172,7 @@
       const theme = localStorage.getItem("theme") || "dark";
       document.getElementById("btn-dark").classList.toggle("active", theme === "dark");
       document.getElementById("btn-light").classList.toggle("active", theme === "light");
-      const hue = parseInt(localStorage.getItem("hue") || "160");
-      setHue(hue);
+      setHue(parseInt(localStorage.getItem("hue") || "160"));
     }
 
     updateUI();

@@ -24,31 +24,19 @@
 
       <div class="btn-group" id="logged-in-btns" style="display:none">
         <a href="dashboard.html" class="btn btn-primary" style="padding:0.65rem 1.5rem;font-size:0.9rem">Go to Dashboard</a>
-        <button class="btn btn-ghost" style="padding:0.65rem 1.5rem;font-size:0.9rem" onclick="logoutLanding()">Sign Out</button>
+        <button class="btn btn-ghost" style="padding:0.65rem 1.5rem;font-size:0.9rem" onclick="logout()">Sign Out</button>
       </div>
     </div>
   </div>
 
+  <script src="js/auth.js"></script>
   <script>
-    const API = "http://34.28.196.192:5000";
-    const token = localStorage.getItem("token");
-    const company = localStorage.getItem("company") ? JSON.parse(localStorage.getItem("company")) : null;
-
-    // Apply theme
-    const theme = localStorage.getItem("theme") || "dark";
-    const accent = localStorage.getItem("accent") || "emerald";
-    document.body.classList.add(`theme-${theme}`, `accent-${accent}`);
-
-    if (token && company) {
+    const company = getCompany();
+    if (getToken() && company) {
       document.getElementById("logged-out-btns").style.display = "none";
       document.getElementById("logged-in-btns").style.display = "flex";
       document.getElementById("company-badge").style.display = "inline-block";
       document.getElementById("company-name-display").textContent = company.name;
-    }
-
-    function logoutLanding() {
-      fetch(`${API}/logout`, { method: "POST", headers: { "Authorization": `Bearer ${token}` } })
-        .finally(() => { localStorage.removeItem("token"); localStorage.removeItem("company"); window.location.reload(); });
     }
   </script>
 </body>

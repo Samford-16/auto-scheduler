@@ -85,18 +85,13 @@
     </div>
   </div>
 
+  <script src="js/auth.js"></script>
   <script>
-    const API = "http://34.28.196.192:5000";
-    const t = localStorage.getItem("theme") || "dark";
-    const ac = localStorage.getItem("accent") || "emerald";
-    document.body.classList.add(`theme-${t}`, `accent-${ac}`);
-    if (!localStorage.getItem("token")) window.location.href = "login.html";
+    if (!getToken()) window.location.href = "login.html";
 
     let currentStep = 1;
     const selectedDays = new Set();
     const selectedRoles = new Set();
-
-    function authHeaders() { return { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` }; }
 
     function toggleDay(el, day) {
       if (selectedDays.has(day)) { selectedDays.delete(day); el.classList.remove("selected"); }
@@ -127,7 +122,7 @@
         const open = document.getElementById("open-time").value;
         const close = document.getElementById("close-time").value;
         if (!open || !close) return;
-        const company = JSON.parse(localStorage.getItem("company") || "{}");
+        const company = getCompany() || {};
         await fetch(`${API}/company`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ name: company.name, open_time: open, close_time: close }) });
         currentStep = 2; updateStepUI();
       } else if (currentStep === 2) {
@@ -135,7 +130,7 @@
         const data = await res.json();
         const grid = document.getElementById("worker-roles-grid");
         grid.innerHTML = (data.roles || []).length
-          ? data.roles.map(r => `<div class="role-btn" onclick="toggleWorkerRole(this,${r.id})">${r.name}</div>`).join("")
+          ? data.roles.map(r => `<div class="role-btn" onclick="toggleWorkerRole(this,${r.id})">${esc(r.name)}</div>`).join("")
           : `<span class="no-roles">No roles added — that's okay!</span>`;
         currentStep = 3; updateStepUI();
       } else {
@@ -164,7 +159,7 @@
       fetch(`${API}/roles`, { headers: authHeaders() }).then(r => r.json()).then(data => {
         const list = document.getElementById("roles-list");
         list.innerHTML = data.roles.length
-          ? data.roles.map(r => `<div class="role-tag">${r.name}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("")
+          ? data.roles.map(r => `<div class="role-tag">${esc(r.name)}<span class="del" onclick="deleteRole(${r.id})">×</span></div>`).join("")
           : `<span style="color:var(--text-muted);font-size:0.85rem">No roles yet...</span>`;
       });
     }

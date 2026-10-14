@@ -54,36 +54,12 @@
     .footer-link { text-align: center; font-size: 0.85rem; color: var(--muted); }
     .footer-link a { color: var(--accent); text-decoration: none; }
 
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; width: 100%; max-width: 400px; margin: 1rem; }
+
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-
-<!-- Reset Password Modal -->
-<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:none;align-items:center;justify-content:center;">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:400px;margin:1rem;">
-    <h3 style="font-family:'Syne',sans-serif;font-size:1.2rem;margin-bottom:0.4rem;">Reset Password</h3>
-    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;">Enter your email and a new password.</p>
-    <div class="error" id="reset-error"></div>
-    <div id="reset-success" style="display:none;color:#4ade80;font-size:0.85rem;margin-bottom:1rem;"></div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="reset-email" placeholder="you@company.com">
-    </div>
-    <div class="form-group">
-      <label>New Password</label>
-      <input type="password" id="reset-password" placeholder="••••••••">
-    </div>
-    <div class="form-group">
-      <label>Confirm New Password</label>
-      <input type="password" id="reset-confirm" placeholder="••••••••">
-    </div>
-    <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
-      <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);" onclick="closeReset()">Cancel</button>
-      <button class="btn btn-primary" style="margin-bottom:0;" onclick="resetPassword()">Reset Password</button>
-    </div>
-  </div>
-</div>
-
 <body>
   <div class="bg-grid"></div>
   <div class="card">
@@ -103,12 +79,42 @@
     </div>
 
     <button class="btn btn-primary" onclick="login()">Sign In</button>
-    <p class="footer-link" style="margin-bottom:0.75rem;">Forgot your password? <a href="#" onclick="openReset()">Reset it</a></p>
-<p class="footer-link">Don't have an account? <a href="signup.html">Sign up free</a></p>
+    <p class="footer-link" style="margin-bottom:0.75rem;">Need to change your password? <a href="#" onclick="openReset(); return false;">Change it</a></p>
+    <p class="footer-link">Don't have an account? <a href="signup.html">Sign up free</a></p>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="reset-modal">
+    <div class="modal">
+      <h3 style="font-family:'Syne',sans-serif;font-size:1.2rem;margin-bottom:0.4rem;">Change Password</h3>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;">Enter your email, current password, and a new password.</p>
+      <div class="error" id="reset-error"></div>
+      <div id="reset-success" style="display:none;color:#4ade80;font-size:0.85rem;margin-bottom:1rem;"></div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reset-email" placeholder="you@company.com">
+      </div>
+      <div class="form-group">
+        <label>Current Password</label>
+        <input type="password" id="reset-current" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="reset-password" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" id="reset-confirm" placeholder="••••••••">
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+        <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);" onclick="closeReset()">Cancel</button>
+        <button class="btn btn-primary" style="margin-bottom:0;" onclick="resetPassword()">Update</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const API = "http://34.28.196.192:5000";
+    const API = "";
 
     // Redirect if already logged in
     if (localStorage.getItem("token")) window.location.href = "index.html";
@@ -148,49 +154,50 @@
     }
 
     function openReset() {
-  document.getElementById("reset-modal").style.display = "flex";
-  document.getElementById("reset-error").style.display = "none";
-  document.getElementById("reset-success").style.display = "none";
-  document.getElementById("reset-email").value = "";
-  document.getElementById("reset-password").value = "";
-  document.getElementById("reset-confirm").value = "";
-}
-
-function closeReset() {
-  document.getElementById("reset-modal").style.display = "none";
-}
-
-function resetPassword() {
-  const email = document.getElementById("reset-email").value.trim();
-  const password = document.getElementById("reset-password").value;
-  const confirm = document.getElementById("reset-confirm").value;
-  const err = document.getElementById("reset-error");
-  const success = document.getElementById("reset-success");
-  err.style.display = "none";
-  success.style.display = "none";
-
-  if (!email || !password || !confirm) { err.textContent = "Please fill in all fields."; err.style.display = "block"; return; }
-  if (password !== confirm) { err.textContent = "Passwords do not match."; err.style.display = "block"; return; }
-  if (password.length < 6) { err.textContent = "Password must be at least 6 characters."; err.style.display = "block"; return; }
-
-  fetch(`${API}/reset-password`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  }).then(r => r.json()).then(data => {
-    if (data.status === "success") {
-      success.textContent = "Password reset! You can now sign in.";
-      success.style.display = "block";
-      setTimeout(closeReset, 2000);
-    } else {
-      err.textContent = data.message || "Reset failed.";
-      err.style.display = "block";
+      document.getElementById("reset-modal").style.display = "flex";
+      document.getElementById("reset-error").style.display = "none";
+      document.getElementById("reset-success").style.display = "none";
+      ["reset-email", "reset-current", "reset-password", "reset-confirm"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
     }
-  }).catch(() => {
-    err.textContent = "Could not connect to server.";
-    err.style.display = "block";
-  });
-}
+
+    function closeReset() {
+      document.getElementById("reset-modal").style.display = "none";
+    }
+
+    function resetPassword() {
+      const email = document.getElementById("reset-email").value.trim();
+      const current = document.getElementById("reset-current").value;
+      const password = document.getElementById("reset-password").value;
+      const confirm = document.getElementById("reset-confirm").value;
+      const err = document.getElementById("reset-error");
+      const success = document.getElementById("reset-success");
+      err.style.display = "none";
+      success.style.display = "none";
+
+      if (!email || !current || !password || !confirm) { err.textContent = "Please fill in all fields."; err.style.display = "block"; return; }
+      if (password !== confirm) { err.textContent = "Passwords do not match."; err.style.display = "block"; return; }
+      if (password.length < 6) { err.textContent = "Password must be at least 6 characters."; err.style.display = "block"; return; }
+
+      fetch(`${API}/change-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, current_password: current, new_password: password })
+      }).then(r => r.json()).then(data => {
+        if (data.status === "success") {
+          success.textContent = "Password updated. You can now sign in.";
+          success.style.display = "block";
+          setTimeout(closeReset, 2000);
+        } else {
+          err.textContent = data.message || "Update failed.";
+          err.style.display = "block";
+        }
+      }).catch(() => {
+        err.textContent = "Could not connect to server.";
+        err.style.display = "block";
+      });
+    }
   </script>
 </body>
 </html>
