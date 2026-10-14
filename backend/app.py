@@ -36,7 +36,9 @@ def serve_static(filename):
 # ──────────────────────────────────────────────
 
 def hash_password(password):
-    return generate_password_hash(password)
+    # PBKDF2 works on every Python build. Werkzeug's default (scrypt) is
+    # missing on some, such as the Python 3.9 that ships with macOS.
+    return generate_password_hash(password, method="pbkdf2:sha256")
 
 
 def verify_password(stored, password):

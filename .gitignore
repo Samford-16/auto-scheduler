@@ -1,2 +1,21 @@
+# Local database (contains account data, never commit)
 *.db
+*.sqlite
+*.sqlite3
+
+# Python
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Environment and secrets
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
